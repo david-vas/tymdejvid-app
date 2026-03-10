@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>#TYMDEJVID – Členský portál</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green:       #16a34a;
+      --green-dark:  #15803d;
+      --green-deep:  #166534;
+      --green-light: #dcfce7;
+      --green-mid:   #bbf7d0;
+      --blue-dark:   #0f172a;
+      --text:        #1a1a1a;
+      --text-light:  #64748b;
+      --bg:          #f8fafc;
+      --card:        #ffffff;
+      --border:      #e2e8f0;
+      --radius:      12px;
+      --radius-sm:   8px;
+      --shadow:      0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+      --shadow-md:   0 4px 12px rgba(0,0,0,.1);
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Open Sans', sans-serif; font-size: 15px; color: var(--text); background: var(--bg); min-height: 100vh; }
+    h1,h2,h3,h4 { font-family: 'Baloo 2', sans-serif; line-height: 1.25; }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; border: none; outline: none; font-family: inherit; }
+
+    /* ── HELPERS ─────────────────────────────────────── */
+    .hidden { display: none !important; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── BUTTONS ─────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 12px 24px; border-radius: var(--radius-sm);
+      font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 15px;
+      transition: all .2s; cursor: pointer;
+    }
+    .btn-green { background: var(--green); color: #fff; }
+    .btn-green:hover { background: var(--green-dark); transform: translateY(-1px); }
+    .btn-green:disabled { background: #a3d9b8; cursor: not-allowed; transform: none; }
+    .btn-outline { border: 2px solid var(--green); color: var(--green); background: transparent; }
+    .btn-outline:hover { background: var(--green); color: #fff; }
+    .btn-red { background: #ef4444; color: #fff; }
+    .btn-red:hover { background: #dc2626; }
+    .btn-gray { background: var(--border); color: var(--text-light); }
+    .btn-full { width: 100%; }
+
+    /* ── LOGIN SCREEN ────────────────────────────────── */
+    #screen-login {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #0f172a 0%, #16a34a 100%);
+      padding: 24px;
+    }
+    .login-card {
+      background: white; border-radius: 20px; padding: 40px 32px;
+      width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    }
+    .login-logo {
+      text-align: center; margin-bottom: 32px;
+    }
+    .login-logo .hashtag { font-family: 'Baloo 2', sans-serif; font-size: 36px; font-weight: 800; color: var(--green); }
+    .login-logo .subtitle { color: var(--text-light); font-size: 13px; margin-top: 4px; }
+    .login-tabs { display: flex; gap: 0; margin-bottom: 28px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
+    .login-tab { flex: 1; padding: 10px; text-align: center; font-family: 'Baloo 2', sans-serif; font-weight: 600; font-size: 14px; background: var(--bg); color: var(--text-light); cursor: pointer; transition: all .2s; }
+    .login-tab.active { background: var(--green); color: white; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: var(--text-light); text-transform: uppercase; letter-spacing: .5px; }
+    .form-group input {
+      width: 100%; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 15px; font-family: inherit; transition: border-color .2s;
+    }
+    .form-group input:focus { outline: none; border-color: var(--green); }
+    .form-error { color: #ef4444; font-size: 13px; margin-top: 8px; display: none; }
+    .form-error.show { display: block; }
+
+    /* ── APP LAYOUT ──────────────────────────────────── */
+    #app {
+      max-width: 480px; margin: 0 auto;
+      min-height: 100vh; display: flex; flex-direction: column;
+      padding-bottom: 72px;
+    }
+
+    /* ── TOP HEADER ──────────────────────────────────── */
+    .app-header {
+      position: sticky; top: 0; z-index: 100;
+      background: white; border-bottom: 1px solid var(--border);
+      padding: 0 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 56px;
+    }
+    .app-header .logo { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 20px; color: var(--green); }
+    .app-header .header-right { display: flex; align-items: center; gap: 10px; }
+    .avatar-sm {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--green-light); color: var(--green-deep);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 14px;
+      cursor: pointer;
+    }
+    .notification-btn {
+      width: 34px; height: 34px; border-radius: 50%; background: var(--bg);
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+      position: relative;
+    }
+    .notif-dot {
+      position: absolute; top: 6px; right: 6px;
+      width: 8px; height: 8px; border-radius: 50%; background: #ef4444;
+      border: 2px solid white;
+    }
+
+    /* ── BOTTOM NAV ──────────────────────────────────── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px;
+      background: white; border-top: 1px solid var(--border);
+      display: flex; z-index: 100;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 8px 0; gap: 3px; cursor: pointer;
+      color: var(--text-light); transition: color .2s;
+      font-size: 10px; font-weight: 600; font-family: 'Baloo 2', sans-serif;
+    }
+    .nav-item .nav-icon { font-size: 20px; line-height: 1; }
+    .nav-item.active { color: var(--green); }
+    .nav-item.active .nav-icon { transform: scale(1.1); }
+
+    /* ── SCREEN CONTENT ──────────────────────────────── */
+    .screen-content { padding: 16px; }
+
+    /* ── CARDS ───────────────────────────────────────── */
+    .card {
+      background: var(--card); border-radius: var(--radius);
+      box-shadow: var(--shadow); overflow: hidden;
+    }
+    .card-body { padding: 16px; }
+    .card-title { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 17px; margin-bottom: 4px; }
+    .card-sub { color: var(--text-light); font-size: 13px; }
+
+    /* ── DASHBOARD ───────────────────────────────────── */
+    .hero-card {
+      background: linear-gradient(135deg, var(--green-deep) 0%, var(--green) 100%);
+      color: white; border-radius: var(--radius); padding: 20px;
+      margin-bottom: 16px;
+    }
+    .hero-greeting { font-size: 13px; opacity: .8; margin-bottom: 4px; }
+    .hero-name { font-family: 'Baloo 2', sans-serif; font-size: 24px; font-weight: 800; }
+    .hero-stats { display: flex; gap: 16px; margin-top: 16px; }
+    .hero-stat { text-align: center; }
+    .hero-stat .val { font-family: 'Baloo 2', sans-serif; font-size: 26px; font-weight: 800; }
+    .hero-stat .lbl { font-size: 11px; opacity: .8; text-transform: uppercase; letter-spacing: .5px; }
+    .hero-stat-divider { width: 1px; background: rgba(255,255,255,.3); }
+
+    .section-title {
+      font-family: 'Baloo 2', sans-serif; font-size: 16px; font-weight: 700;
+      color: var(--text); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .section-title a { font-size: 13px; color: var(--green); font-weight: 600; font-family: 'Open Sans', sans-serif; }
+
+    .training-card {
+      background: var(--card); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 16px; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 14px; cursor: pointer;
+      transition: box-shadow .2s, transform .15s;
+      border-left: 4px solid var(--green);
+    }
+    .training-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .training-card.registered { border-left-color: #3b82f6; }
+    .training-card.past { border-left-color: var(--border); opacity: .7; }
+    .training-date-box {
+      background: var(--green-light); border-radius: var(--radius-sm);
+      min-width: 50px; text-align: center; padding: 8px 6px;
+    }
+    .training-date-box.registered { background: #dbeafe; }
+    .training-date-box.past { background: var(--bg); }
+    .training-date-box .day-num { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px; color: var(--green-deep); line-height: 1; }
+    .training-date-box.registered .day-num { color: #1e40af; }
+    .training-date-box .day-name { font-size: 11px; font-weight: 600; color: var(--text-light); text-transform: uppercase; }
+    .training-info { flex: 1; }
+    .training-type { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 15px; }
+    .training-meta { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+    .training-badge {
+      font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px;
+      font-family: 'Baloo 2', sans-serif;
+    }
+    .badge-open { background: var(--green-light); color: var(--green-deep); }
+    .badge-registered { background: #dbeafe; color: #1e40af; }
+    .badge-full { background: #fee2e2; color: #b91c1c; }
+    .badge-past { background: var(--border); color: var(--text-light); }
+    .badge-present { background: var(--green-light); color: var(--green-deep); }
+    .badge-absent { background: #fee2e2; color: #b91c1c; }
+    .badge-cancelled { background: #fee2e2; color: #b91c1c; }
+    .training-card.cancelled { border-left-color: #ef4444; opacity: .65; }
+    .training-date-box.cancelled { background: #fee2e2; }
+    .training-date-box.cancelled .day-num { color: #b91c1c; }
+
+    /* streak card */
+    .streak-card {
+      background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+      color: white; border-radius: var(--radius); padding: 16px 20px;
+      display: flex; align-items: center; gap: 16px; margin-bottom: 16px;
+    }
+    .streak-icon { font-size: 36px; }
+    .streak-val { font-family: 'Baloo 2', sans-serif; font-size: 28px; font-weight: 800; }
+    .streak-lbl { font-size: 13px; opacity: .9; }
+
+    /* ── CALENDAR ────────────────────────────────────── */
+    .cal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 4px; margin-bottom: 12px;
+    }
+    .cal-month { font-family: 'Baloo 2', sans-serif; font-size: 20px; font-weight: 700; }
+    .cal-nav { background: none; border: 1.5px solid var(--border); border-radius: var(--radius-sm); width: 36px; height: 36px; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+    .cal-nav:hover { background: var(--green-light); border-color: var(--green); }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .cal-dow { text-align: center; font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; padding: 4px 0 8px; }
+    .cal-day {
+      aspect-ratio: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      border-radius: var(--radius-sm); font-size: 14px; font-weight: 600;
+      cursor: default; position: relative; transition: all .15s;
+    }
+    .cal-day.empty { background: none; }
+    .cal-day.today { background: var(--green); color: white; font-weight: 800; }
+    .cal-day.training { background: var(--green-light); color: var(--green-deep); cursor: pointer; font-weight: 700; }
+    .cal-day.training:hover { background: var(--green-mid); transform: scale(1.05); }
+    .cal-day.registered { background: #dbeafe; color: #1e40af; cursor: pointer; }
+    .cal-day.registered:hover { background: #bfdbfe; transform: scale(1.05); }
+    .cal-day.past-training { background: var(--bg); color: var(--text-light); cursor: pointer; }
+    .cal-day.today.training { background: var(--green); color: white; }
+    .cal-dot {
+      position: absolute; bottom: 3px;
+      width: 5px; height: 5px; border-radius: 50%;
+    }
+    .cal-dot.green { background: var(--green); }
+    .cal-dot.blue { background: #3b82f6; }
+    .cal-dot.white { background: white; }
+    .cal-dot.gray { background: var(--text-light); }
+    .cal-dot.red { background: #ef4444; }
+    .cal-day.cancelled-day { background: #fee2e2; color: #b91c1c; cursor: pointer; }
+    .cal-day.cancelled-day:hover { background: #fecaca; transform: scale(1.05); }
+    .cal-legend {
+      display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px;
+      padding: 12px; background: var(--card); border-radius: var(--radius-sm);
+    }
+    .cal-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-light); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+    /* ── TRAINING DETAIL ─────────────────────────────── */
+    .training-hero {
+      background: linear-gradient(135deg, var(--green-deep) 0%, var(--green) 100%);
+      color: white; padding: 24px 16px 20px;
+    }
+    .training-hero .date-big { font-family: 'Baloo 2', sans-serif; font-size: 14px; opacity: .8; margin-bottom: 4px; }
+    .training-hero .type-big { font-family: 'Baloo 2', sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 12px; }
+    .training-hero-meta { display: flex; gap: 16px; flex-wrap: wrap; }
+    .training-hero-meta span { font-size: 13px; display: flex; align-items: center; gap: 5px; }
+
+    .info-row {
+      display: flex; gap: 10px; padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-icon { font-size: 18px; width: 24px; flex-shrink: 0; }
+    .info-label { font-size: 12px; color: var(--text-light); margin-bottom: 2px; }
+    .info-val { font-weight: 600; font-size: 14px; }
+
+    .participants-row {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .avatar-mini {
+      width: 28px; height: 28px; border-radius: 50%; background: var(--green-light);
+      color: var(--green-deep); display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; font-family: 'Baloo 2', sans-serif;
+      border: 2px solid white;
+    }
+    .avatar-mini.more { background: var(--border); color: var(--text-light); font-size: 10px; }
+
+    .register-bar {
+      position: sticky; bottom: 72px; background: white;
+      padding: 12px 16px; border-top: 1px solid var(--border);
+      display: flex; gap: 10px;
+    }
+
+    /* ── QR MODAL ────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.5);
+      display: flex; align-items: flex-end; justify-content: center;
+      z-index: 200; opacity: 0; pointer-events: none; transition: opacity .3s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-sheet {
+      background: white; border-radius: 20px 20px 0 0; padding: 0;
+      width: 100%; max-width: 480px; transform: translateY(100%);
+      transition: transform .3s ease; overflow: hidden;
+    }
+    .modal-overlay.open .modal-sheet { transform: translateY(0); }
+    .modal-handle { width: 40px; height: 4px; border-radius: 2px; background: var(--border); margin: 12px auto 20px; }
+    .modal-body { padding: 0 24px 32px; }
+    .modal-title { font-family: 'Baloo 2', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+    .modal-sub { color: var(--text-light); font-size: 14px; margin-bottom: 24px; }
+    .qr-container { display: flex; justify-content: center; margin-bottom: 20px; }
+    #qr-code canvas, #qr-code img { border-radius: 8px; }
+    .payment-info {
+      background: var(--bg); border-radius: var(--radius-sm); padding: 14px;
+      font-size: 13px; color: var(--text-light); text-align: center; line-height: 1.6;
+    }
+    .payment-info strong { color: var(--text); font-size: 15px; }
+
+    /* ── ATTENDANCE SCREEN ───────────────────────────── */
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+    .stat-box {
+      background: var(--card); border-radius: var(--radius); padding: 14px 10px;
+      text-align: center; box-shadow: var(--shadow);
+    }
+    .stat-box .val { font-family: 'Baloo 2', sans-serif; font-size: 28px; font-weight: 800; color: var(--green); }
+    .stat-box .lbl { font-size: 11px; color: var(--text-light); text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
+
+    .progress-bar-wrap { background: var(--border); border-radius: 99px; height: 8px; margin: 6px 0 12px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 99px; background: var(--green); transition: width .5s ease; }
+
+    .attendance-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+    }
+    .attendance-item:last-child { border-bottom: none; }
+    .att-date-box {
+      background: var(--bg); border-radius: var(--radius-sm); min-width: 46px;
+      text-align: center; padding: 6px 4px;
+    }
+    .att-date-box .d { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 18px; line-height: 1; }
+    .att-date-box .m { font-size: 10px; color: var(--text-light); text-transform: uppercase; font-weight: 600; }
+    .att-info { flex: 1; }
+    .att-type { font-weight: 600; font-size: 14px; }
+    .att-meta { font-size: 12px; color: var(--text-light); margin-top: 1px; }
+
+    /* ── PROFILE SCREEN ──────────────────────────────── */
+    .profile-header {
+      background: linear-gradient(135deg, var(--green-deep) 0%, var(--green) 100%);
+      color: white; padding: 32px 16px 24px; text-align: center;
+    }
+    .avatar-lg {
+      width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,.2);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 32px;
+      margin: 0 auto 12px; border: 3px solid rgba(255,255,255,.5);
+    }
+    .profile-name { font-family: 'Baloo 2', sans-serif; font-size: 24px; font-weight: 800; }
+    .profile-email { font-size: 13px; opacity: .8; margin-top: 2px; }
+    .profile-since { font-size: 12px; opacity: .7; margin-top: 8px; }
+
+    .menu-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px; border-bottom: 1px solid var(--border); cursor: pointer;
+      transition: background .15s;
+    }
+    .menu-item:hover { background: var(--bg); }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-icon { font-size: 20px; width: 28px; }
+    .menu-label { flex: 1; font-weight: 600; }
+    .menu-arrow { color: var(--text-light); font-size: 18px; }
+
+    /* ── BACK BUTTON ─────────────────────────────────── */
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 16px; font-size: 14px; font-weight: 600; color: var(--green);
+      background: none; cursor: pointer;
+    }
+
+    /* ── EMPTY STATE ─────────────────────────────────── */
+    .empty-state { text-align: center; padding: 48px 24px; color: var(--text-light); }
+    .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; line-height: 1.6; }
+
+    /* ── TOAST ───────────────────────────────────────── */
+    #toast {
+      position: fixed; top: 64px; left: 50%; transform: translateX(-50%) translateY(-80px);
+      background: var(--blue-dark); color: white; padding: 10px 20px;
+      border-radius: 99px; font-size: 14px; font-weight: 600; z-index: 999;
+      transition: transform .3s; white-space: nowrap;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.success { background: var(--green); }
+    #toast.error { background: #ef4444; }
+
+    /* ── LOADER ──────────────────────────────────────── */
+    .loader { text-align: center; padding: 40px; color: var(--text-light); }
+    .loader .spin { display: inline-block; width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── ADMIN BADGE ─────────────────────────────────── */
+    .admin-badge { background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; font-family: 'Baloo 2', sans-serif; }
+
+    /* ── COACH PANEL ─────────────────────────────────── */
+    .coach-section { margin-top: 16px; }
+    .coach-section .section-title { margin-bottom: 8px; }
+    .attendance-toggle { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .attendance-toggle:last-child { border-bottom: none; }
+    .toggle-name { flex: 1; font-weight: 600; font-size: 14px; }
+    .toggle-btn {
+      width: 44px; height: 24px; border-radius: 12px; background: var(--border);
+      position: relative; cursor: pointer; transition: background .2s; flex-shrink: 0;
+    }
+    .toggle-btn.on { background: var(--green); }
+    .toggle-btn::after {
+      content: ''; position: absolute; top: 2px; left: 2px;
+      width: 20px; height: 20px; border-radius: 50%; background: white;
+      transition: left .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .toggle-btn.on::after { left: 22px; }
+
+    @media (max-width: 360px) {
+      .hero-stat .val { font-size: 22px; }
+      .cal-day { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════ LOGIN SCREEN ════════════════════════════════════════════════ -->
+<div id="screen-login">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="hashtag">#TYMDEJVID</div>
+      <div class="subtitle">Běžecký spolek · České Budějovice</div>
+    </div>
+
+    <div class="login-tabs">
+      <div class="login-tab active" data-tab="login">Přihlásit se</div>
+      <div class="login-tab" data-tab="register">Registrace</div>
+    </div>
+
+    <!-- Login form -->
+    <div id="form-login">
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" id="login-email" placeholder="jan@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Heslo</label>
+        <input type="password" id="login-pass" placeholder="••••••••" />
+      </div>
+      <p class="form-error" id="login-error">Nesprávný e-mail nebo heslo.</p>
+      <button class="btn btn-green btn-full" style="margin-top:8px" onclick="doLogin()">Přihlásit se</button>
+      <p style="text-align:center;margin-top:14px;font-size:13px;color:var(--text-light)">
+        Ještě nejsi člen? <a onclick="switchTab('register')" style="color:var(--green);font-weight:700;cursor:pointer">Zaregistruj se</a>
+      </p>
+    </div>
+
+    <!-- Register form -->
+    <div id="form-register" class="hidden">
+      <div class="form-group">
+        <label>Jméno a příjmení</label>
+        <input type="text" id="reg-name" placeholder="Jan Novák" />
+      </div>
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" id="reg-email" placeholder="jan@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Heslo</label>
+        <input type="password" id="reg-pass" placeholder="min. 6 znaků" />
+      </div>
+      <p class="form-error" id="reg-error"></p>
+      <button class="btn btn-green btn-full" style="margin-top:8px" onclick="doRegister()">Vytvořit účet</button>
+      <p style="text-align:center;margin-top:14px;font-size:13px;color:var(--text-light)">
+        Máš účet? <a onclick="switchTab('login')" style="color:var(--green);font-weight:700;cursor:pointer">Přihlásit se</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ════ APP ══════════════════════════════════════════════════════════ -->
+<div id="app" class="hidden">
+
+  <header class="app-header">
+    <div class="logo">#TYMDEJVID</div>
+    <div class="header-right">
+      <div class="notification-btn" onclick="showToast('Žádné nové zprávy','')">🔔<span class="notif-dot"></span></div>
+      <div class="avatar-sm" id="header-avatar" onclick="navigate('profile')"></div>
+    </div>
+  </header>
+
+  <!-- ── DASHBOARD ─────────────────────────────────────── -->
+  <div id="screen-dashboard" class="screen active">
+    <div class="screen-content">
+      <!-- Hero -->
+      <div class="hero-card">
+        <div class="hero-greeting">Vítej zpět 👋</div>
+        <div class="hero-name" id="dash-name">—</div>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <div class="val" id="dash-total">0</div>
+            <div class="lbl">Tréninků</div>
+          </div>
+          <div class="hero-stat-divider"></div>
+          <div class="hero-stat">
+            <div class="val" id="dash-pct">0%</div>
+            <div class="lbl">Docházka</div>
+          </div>
+          <div class="hero-stat-divider"></div>
+          <div class="hero-stat">
+            <div class="val" id="dash-streak">0</div>
+            <div class="lbl">Série &#128293;</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming trainings -->
+      <div class="section-title">
+        Nadcházející tréninky
+        <a onclick="navigate('calendar')">Kalendář →</a>
+      </div>
+      <div id="upcoming-list"><div class="loader"><div class="spin"></div></div></div>
+
+      <!-- Recent attendance -->
+      <div class="section-title" style="margin-top:20px">
+        Poslední docházka
+        <a onclick="navigate('attendance')">Vše →</a>
+      </div>
+      <div id="recent-attendance-list"></div>
+    </div>
+  </div>
+
+  <!-- ── CALENDAR ──────────────────────────────────────── -->
+  <div id="screen-calendar" class="screen">
+    <div class="screen-content">
+      <div class="cal-header">
+        <button class="cal-nav" onclick="changeMonth(-1)">&#8249;</button>
+        <div class="cal-month" id="cal-month-label"></div>
+        <button class="cal-nav" onclick="changeMonth(1)">&#8250;</button>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+      </div>
+      <div class="cal-legend">
+        <div class="cal-legend-item"><div class="legend-dot" style="background:var(--green-light);border:1px solid var(--green)"></div> Trénink</div>
+        <div class="cal-legend-item"><div class="legend-dot" style="background:#dbeafe"></div> Přihlášen/a</div>
+        <div class="cal-legend-item"><div class="legend-dot" style="background:var(--green)"></div> Dnes</div>
+        <div class="cal-legend-item"><div class="legend-dot" style="background:var(--bg);border:1px solid var(--border)"></div> Proběhl</div>
+        <div class="cal-legend-item"><div class="legend-dot" style="background:#fee2e2;border:1px solid #ef4444"></div> Zrušen</div>
+      </div>
+
+      <div class="section-title" style="margin-top:20px">Tréninky tohoto měsíce</div>
+      <div id="month-trainings-list"></div>
+    </div>
+  </div>
+
+  <!-- ── TRAINING DETAIL ───────────────────────────────── -->
+  <div id="screen-training" class="screen">
+    <button class="back-btn" onclick="goBack()">← Zpět</button>
+    <div id="training-detail-content"></div>
+    <div class="register-bar" id="register-bar"></div>
+  </div>
+
+  <!-- ── ATTENDANCE ────────────────────────────────────── -->
+  <div id="screen-attendance" class="screen">
+    <div class="screen-content">
+      <div class="stats-grid" id="att-stats"></div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-weight:600;font-size:14px">Celková docházka</span>
+            <span id="att-pct-label" style="font-weight:700;color:var(--green)">0%</span>
+          </div>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" id="att-progress" style="width:0%"></div></div>
+          <div style="font-size:12px;color:var(--text-light)" id="att-sub"></div>
+        </div>
+      </div>
+      <div class="section-title">Historie tréninků</div>
+      <div class="card"><div class="card-body" id="att-history"></div></div>
+    </div>
+  </div>
+
+  <!-- ── PROFILE ───────────────────────────────────────── -->
+  <div id="screen-profile" class="screen">
+    <div class="profile-header">
+      <div class="avatar-lg" id="profile-avatar-lg"></div>
+      <div class="profile-name" id="profile-name"></div>
+      <div class="profile-email" id="profile-email"></div>
+      <div class="profile-since" id="profile-since"></div>
+    </div>
+    <div class="card" style="margin:16px">
+      <div class="menu-item" onclick="navigate('attendance')">
+        <span class="menu-icon">📊</span><span class="menu-label">Moje docházka</span><span class="menu-arrow">›</span>
+      </div>
+      <div class="menu-item" onclick="showQR()">
+        <span class="menu-icon">💳</span><span class="menu-label">Platba QR kódem</span><span class="menu-arrow">›</span>
+      </div>
+      <div class="menu-item" id="admin-menu" onclick="navigate('admin')" style="display:none">
+        <span class="menu-icon">⚙️</span><span class="menu-label">Správa tréninků <span class="admin-badge">TRENÉR</span></span><span class="menu-arrow">›</span>
+      </div>
+      <div class="menu-item" onclick="doLogout()">
+        <span class="menu-icon">🚪</span><span class="menu-label" style="color:#ef4444">Odhlásit se</span><span class="menu-arrow" style="color:#ef4444">›</span>
+      </div>
+    </div>
+    <div style="text-align:center;padding:16px;font-size:12px;color:var(--text-light)">
+      Běžecký spolek #TYMDEJVID z.s. · IČO 14054710
+    </div>
+  </div>
+
+  <!-- ── ADMIN ─────────────────────────────────────────── -->
+  <div id="screen-admin" class="screen">
+    <button class="back-btn" onclick="navigate('profile')">← Profil</button>
+    <div class="screen-content" style="padding-top:0">
+      <div class="section-title">Správa docházky</div>
+      <div id="admin-training-select" style="margin-bottom:16px"></div>
+      <div class="card"><div class="card-body" id="admin-attendance-list"></div></div>
+    </div>
+  </div>
+
+  <!-- ── BOTTOM NAV ─────────────────────────────────────── -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" data-nav="dashboard" onclick="navigate('dashboard')">
+      <span class="nav-icon">🏠</span>Přehled
+    </div>
+    <div class="nav-item" data-nav="calendar" onclick="navigate('calendar')">
+      <span class="nav-icon">📅</span>Kalendář
+    </div>
+    <div class="nav-item" data-nav="attendance" onclick="navigate('attendance')">
+      <span class="nav-icon">✅</span>Docházka
+    </div>
+    <div class="nav-item" data-nav="profile" onclick="navigate('profile')">
+      <span class="nav-icon">👤</span>Profil
+    </div>
+  </nav>
+</div>
+
+<!-- ════ QR MODAL ════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="qr-modal" onclick="closeQR(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-body">
+      <div class="modal-title">Platba QR kódem</div>
+      <div class="modal-sub">Naskenuj kód v bankovní aplikaci</div>
+      <div class="qr-container"><div id="qr-code"></div></div>
+      <div class="payment-info">
+        <strong>150 Kč</strong> člen #tymdejvid &nbsp;·&nbsp; <strong>200 Kč</strong> nečlen<br>
+        <span style="font-size:12px;color:var(--text-light)">(předplatné: 600 Kč / 4 tréninky)</span><br><br>
+        Účet: <strong>123-350890277/0100</strong><br>
+        VS: <span id="qr-vs"></span> &nbsp;·&nbsp; Zpráva: TYMDEJVID
+      </div>
+      <button class="btn btn-outline btn-full" style="margin-top:16px" onclick="closeQRBtn()">Zavřít</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ TOAST ══════════════════════════════════════════════════════ -->
+<div id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   KONFIGURACE – vyplň své hodnoty
+   ═══════════════════════════════════════════════════════════════════ */
+const CFG = {
+  // Notion API (potřebuješ backend proxy kvůli CORS – viz README)
+  notionApiBase:   'https://tvuj-backend.vercel.app/api', // URL tvého proxy
+  trainingsDbId:   'DOPLŇ_ID_DATABAZE_TRENINKU',          // ID Notion DB tréninků
+  attendanceDbId:  'DOPLŇ_ID_DATABAZE_DOCHAZKY',          // ID Notion DB docházky
+  membersDbId:     'DOPLŇ_ID_DATABAZE_CLENU',             // ID Notion DB členů
+
+  // Platba
+  bankAccount:     'CZ9201000001230350890277',  // 123-350890277/0100 KB
+  paymentMember:   150,             // Kč člen #tymdejvid
+  paymentNonMember:200,             // Kč nečlen
+  paymentAmount:   150,             // default (člen)
+
+  // Tréninky
+  trainingDays:    [2, 4],          // 2=úterý, 4=čtvrtek (JS: 0=ne, 1=po, ...)
+  trainingTime:    '17:30',
+  trainingLocation:'Atletický stadion, České Budějovice',
+  coachName:       'David Vaš',
+  coachEmail:      'david@davidvas.cz',  // trenér – dostane admin přístup
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOCK DATA – používá se dokud není Notion připojeno
+   ═══════════════════════════════════════════════════════════════════ */
+// Tréninky přímo z Notion databáze #TYMDEJVID (Březen 2026 + Duben 2026)
+const MOCK_TRAININGS = [
+  // ── BŘEZEN 2026 (z Notion) ────────────────────────────────────────
+  {
+    id: 't-2026-03-03', date: '2026-03-03', time: '17:30',
+    location: 'Atletický stadion, České Budějovice',
+    type: 'Dráha – intervaly', icon: '⚡',
+    description: 'Intervalový trénink na atletické dráze. Rychlostní vytrvalost, práce s tempem.',
+    coach: 'David Vaš', capacity: 20,
+    registered: ['jana@test.cz','petr@test.cz','martin@test.cz'],
+    cancelled: false, budvar: false, notionId: null,
+  },
+  {
+    id: 't-2026-03-05', date: '2026-03-05', time: '17:30',
+    location: 'Atletický stadion, České Budějovice',
+    type: 'Dráha + Budvar', icon: '⚡🍺',
+    description: 'Intervalový trénink na atletické dráze ve spolupráci s Budvarem. Po tréninku Budvar pro všechny!',
+    coach: 'David Vaš', capacity: 20,
+    registered: ['jana@test.cz','petr@test.cz'],
+    cancelled: false, budvar: true, notionId: null,
+  },
+  {
+    id: 't-2026-03-10', date: '2026-03-10', time: '17:30',
+    location: 'Atletický stadion, České Budějovice',
+    type: 'Dráha – intervaly', icon: '⚡',
+    description: 'Intervalový trénink na atletické dráze. Zaměřujeme se na rychlostní vytrvalost a ekonomiku běhu.',
+    coach: 'David Vaš', capacity: 20,
+    registered: [],
+    cancelled: false, budvar: false, notionId: null,
+  },
+  {
+    id: 't-2026-03-12', date: '2026-03-12', time: '17:30',
+    location: 'Atletický stadion, České Budějovice',
+    type: 'Dráha + Budvar', icon: '⚡🍺',
+    description: 'Intervalový trénink na atletické dráze. Čtvrtková dráha se sponzorským pivem Budvar po tréninku!',
+    coach: 'David Vaš', capacity: 20,
+    registered: [],
+    cancelled: false, budvar: true, notionId: null,
+  },
+  {
+    id: 't-2026-03-17', date: '2026-03-17', time: '17:30',
+    location: 'Atletický stadion, České Budějovice',
+    type: 'Dráha – intervaly', icon: '⚡',
+    description: 'Intervalový trénink na atletické dráze. Tempo práce, technika odrazu.',
+    coach: 'David Vaš', capacity: 20,
+    registered: [],
+    cancelled: false, budvar: false, notionId: null,
+  },
+  {
+    id: 't-2026-03-19', date: '2026-03-19', time: '17:30',
+    location: 'Atletický stadion, České Budějovice',
+    type: 'Kopce + Budvar', icon: '⛰️🍺',
+    description: 'Trénink byl zrušen.',
+    coach: 'David Vaš', capacity: 20,
+    registered: [],
+    cancelled: true, budvar: true, notionId: null,
+  },
+  {
+    id: 't-2026-03-24', date: '2026-03-24', time: '17:30',
+    location: 'Kopce, České Budějovice',
+    type: 'Kopce', icon: '⛰️',
+    description: 'Trénink v kopcích – síla, ekonomika běhu, práce paží. Sraz na místě, přijď dobře rozcvičený.',
+    coach: 'David Vaš', capacity: 20,
+    registered: [],
+    cancelled: false, budvar: false, notionId: null,
+  },
+  {
+    id: 't-2026-03-26', date: '2026-03-26', time: '17:30',
+    location: 'Atletický stadion, České Budějovice',
+    type: 'Dráha + Budvar', icon: '⚡🍺',
+    description: 'Trénink byl zrušen.',
+    coach: 'David Vaš', capacity: 20,
+    registered: [],
+    cancelled: true, budvar: true, notionId: null,
+  },
+  // ── DUBEN 2026 ────────────────────────────────────────────────────
+  {
+    id: 't-2026-04-07', date: '2026-04-07', time: '17:30',
+    location: 'Atletický stadion, České Budějovice',
+    type: 'Dráha – intervaly', icon: '⚡',
+    description: 'Intervalový trénink na atletické dráze.',
+    coach: 'David Vaš', capacity: 20, registered: [],
+    cancelled: false, budvar: false, notionId: null,
+  },
+  {
+    id: 't-2026-04-09', date: '2026-04-09', time: '17:30',
+    location: 'Atletický stadion, České Budějovice',
+    type: 'Dráha + Budvar', icon: '⚡🍺',
+    description: 'Dráha ve spolupráci s Budvarem. Pivo po tréninku!',
+    coach: 'David Vaš', capacity: 20, registered: [],
+    cancelled: false, budvar: true, notionId: null,
+  },
+  {
+    id: 't-2026-04-14', date: '2026-04-14', time: '17:30',
+    location: 'Kopce, České Budějovice',
+    type: 'Kopce', icon: '⛰️',
+    description: 'Kopce – síla a ekonomika běhu.',
+    coach: 'David Vaš', capacity: 20, registered: [],
+    cancelled: false, budvar: false, notionId: null,
+  },
+  {
+    id: 't-2026-04-16', date: '2026-04-16', time: '17:30',
+    location: 'Atletický stadion, České Budějovice',
+    type: 'Dráha + Budvar', icon: '⚡🍺',
+    description: 'Dráha + Budvar po tréninku.',
+    coach: 'David Vaš', capacity: 20, registered: [],
+    cancelled: false, budvar: true, notionId: null,
+  },
+  {
+    id: 't-2026-04-22', date: '2026-04-22', time: '17:30',
+    location: 'Atletický stadion, České Budějovice',
+    type: 'Dráha – intervaly', icon: '⚡',
+    description: 'Intervalový trénink na atletické dráze.',
+    coach: 'David Vaš', capacity: 20, registered: [],
+    cancelled: false, budvar: false, notionId: null,
+  },
+  {
+    id: 't-2026-04-24', date: '2026-04-24', time: '17:30',
+    location: 'Kopce, České Budějovice',
+    type: 'Kopce + Budvar', icon: '⛰️🍺',
+    description: 'Kopce + Budvar po tréninku.',
+    coach: 'David Vaš', capacity: 20, registered: [],
+    cancelled: false, budvar: true, notionId: null,
+  },
+  {
+    id: 't-2026-04-28', date: '2026-04-28', time: '17:30',
+    location: 'Atletický stadion, České Budějovice',
+    type: 'Dráha – intervaly', icon: '⚡',
+    description: 'Intervalový trénink na atletické dráze.',
+    coach: 'David Vaš', capacity: 20, registered: [],
+    cancelled: false, budvar: false, notionId: null,
+  },
+];
+
+const MOCK_USERS = [
+  { id: 'u1', name: 'Demo Člen', email: 'demo@tymdejvid.cz', password: 'heslo123', role: 'member', joinDate: '2025-03-01' },
+  { id: 'u2', name: 'David Vaš', email: 'david@davidvas.cz',  password: 'trenér123', role: 'coach',  joinDate: '2024-01-01' },
+  { id: 'u3', name: 'Jana Nováková', email: 'jana@test.cz',   password: 'test123',   role: 'member', joinDate: '2025-06-01' },
+];
+
+/* ═══════════════════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════════════════ */
+let STATE = {
+  user:            null,
+  trainings:       [],
+  attendance:      {},   // { trainingId: { present: bool, notionId: str } }
+  registrations:   {},   // { trainingId: bool }
+  currentScreen:   'dashboard',
+  prevScreen:      null,
+  selectedTraining:null,
+  calMonth:        new Date(),
+  notionConnected: false,
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   PERSISTENCE (localStorage)
+   ═══════════════════════════════════════════════════════════════════ */
+function saveState() {
+  if (!STATE.user) return;
+  const key = `tyd_${STATE.user.id}`;
+  localStorage.setItem(key, JSON.stringify({
+    attendance:    STATE.attendance,
+    registrations: STATE.registrations,
+  }));
+  localStorage.setItem('tyd_users', JSON.stringify(getAllUsers()));
+}
+
+function loadState() {
+  if (!STATE.user) return;
+  const key = `tyd_${STATE.user.id}`;
+  const d = JSON.parse(localStorage.getItem(key) || '{}');
+  STATE.attendance    = d.attendance    || {};
+  STATE.registrations = d.registrations || {};
+}
+
+function getAllUsers() {
+  return JSON.parse(localStorage.getItem('tyd_users') || JSON.stringify(MOCK_USERS));
+}
+
+function saveUsers(users) {
+  localStorage.setItem('tyd_users', JSON.stringify(users));
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   AUTH
+   ═══════════════════════════════════════════════════════════════════ */
+function switchTab(tab) {
+  document.querySelectorAll('.login-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('form-register').classList.toggle('hidden', tab !== 'register');
+}
+
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('login-pass').value;
+  const users = getAllUsers();
+  const user  = users.find(u => u.email.toLowerCase() === email && u.password === pass);
+  if (!user) {
+    document.getElementById('login-error').classList.add('show');
+    return;
+  }
+  document.getElementById('login-error').classList.remove('show');
+  loginSuccess(user);
+}
+
+function doRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('reg-pass').value;
+  const errEl = document.getElementById('reg-error');
+  if (!name || !email || pass.length < 6) {
+    errEl.textContent = 'Vyplň všechna pole (heslo min. 6 znaků).';
+    errEl.classList.add('show'); return;
+  }
+  const users = getAllUsers();
+  if (users.find(u => u.email.toLowerCase() === email)) {
+    errEl.textContent = 'Tento e-mail je již registrován.';
+    errEl.classList.add('show'); return;
+  }
+  const newUser = { id: 'u' + Date.now(), name, email, password: pass, role: 'member', joinDate: new Date().toISOString().slice(0,10) };
+  users.push(newUser);
+  saveUsers(users);
+  errEl.classList.remove('show');
+  loginSuccess(newUser);
+}
+
+function loginSuccess(user) {
+  STATE.user = user;
+  loadState();
+  STATE.trainings = MOCK_TRAININGS;
+  document.getElementById('screen-login').style.display = 'none';
+  document.getElementById('app').classList.remove('hidden');
+  updateHeaderAvatar();
+  if (user.role === 'coach') document.getElementById('admin-menu').style.display = 'flex';
+  navigate('dashboard');
+  tryLoadNotion();
+  showToast(`Vítej, ${user.name.split(' ')[0]}! 👋`, 'success');
+}
+
+function doLogout() {
+  saveState();
+  STATE.user = null;
+  STATE.attendance = {};
+  STATE.registrations = {};
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('screen-login').style.display = 'flex';
+}
+
+function updateHeaderAvatar() {
+  const initials = STATE.user ? STATE.user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '?';
+  document.getElementById('header-avatar').textContent = initials;
+}
+
+// Auto-login from localStorage session
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('tyd_session');
+  if (saved) {
+    const users = getAllUsers();
+    const user = users.find(u => u.id === saved);
+    if (user) { loginSuccess(user); return; }
+  }
+  // show demo hint
+  setTimeout(() => {
+    document.getElementById('login-email').value = 'demo@tymdejvid.cz';
+    document.getElementById('login-pass').value  = 'heslo123';
+  }, 100);
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   NOTION API (proxy)
+   ═══════════════════════════════════════════════════════════════════ */
+async function tryLoadNotion() {
+  if (!CFG.trainingsDbId || CFG.trainingsDbId.includes('DOPLŇ')) return;
+  try {
+    const res = await fetch(`${CFG.notionApiBase}/trainings`);
+    if (!res.ok) return;
+    const data = await res.json();
+    STATE.trainings = data.trainings || STATE.trainings;
+    STATE.notionConnected = true;
+    renderCurrentScreen();
+  } catch(e) { /* use mock */ }
+}
+
+async function syncAttendanceToNotion(trainingId, userId, present) {
+  if (!STATE.notionConnected) return;
+  try {
+    await fetch(`${CFG.notionApiBase}/attendance`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ trainingId, userId, present, userEmail: STATE.user.email })
+    });
+  } catch(e) {}
+}
+
+async function syncRegistrationToNotion(trainingId, registered) {
+  if (!STATE.notionConnected) return;
+  try {
+    await fetch(`${CFG.notionApiBase}/register`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ trainingId, registered, userId: STATE.user.id, userEmail: STATE.user.email })
+    });
+  } catch(e) {}
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════════════════════════ */
+function navigate(screen, data) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(`screen-${screen}`);
+  if (!el) return;
+  el.classList.add('active');
+  STATE.prevScreen    = STATE.currentScreen;
+  STATE.currentScreen = screen;
+  if (data) STATE.selectedTraining = data;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.nav === screen));
+  window.scrollTo(0, 0);
+  renderCurrentScreen();
+}
+
+function goBack() {
+  navigate(STATE.prevScreen || 'dashboard');
+}
+
+function renderCurrentScreen() {
+  switch (STATE.currentScreen) {
+    case 'dashboard':  renderDashboard();  break;
+    case 'calendar':   renderCalendar();   break;
+    case 'training':   renderTraining();   break;
+    case 'attendance': renderAttendance(); break;
+    case 'profile':    renderProfile();    break;
+    case 'admin':      renderAdmin();      break;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════════════════ */
+const MONTHS_CS  = ['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srpen','Září','Říjen','Listopad','Prosinec'];
+const MONTHS_GEN = ['ledna','února','března','dubna','května','června','července','srpna','září','října','listopadu','prosince'];
+const DAYS_CS    = ['Ne','Po','Út','St','Čt','Pá','So'];
+const DAYS_FULL  = ['neděle','pondělí','úterý','středa','čtvrtek','pátek','sobota'];
+
+function fmtDate(iso) {
+  const d = new Date(iso + 'T00:00:00');
+  return `${d.getDate()}. ${MONTHS_GEN[d.getMonth()]} ${d.getFullYear()}`;
+}
+function fmtDayShort(iso) {
+  const d = new Date(iso + 'T00:00:00');
+  return `${d.getDate()}. ${MONTHS_GEN[d.getMonth()]}`;
+}
+function isToday(iso) {
+  return iso === new Date().toISOString().slice(0,10);
+}
+function isPast(iso) {
+  return iso < new Date().toISOString().slice(0,10);
+}
+function isFuture(iso) {
+  return iso > new Date().toISOString().slice(0,10);
+}
+function getInitials(name) {
+  return (name || '').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+}
+
+function getUserStats() {
+  const pastTrainings = STATE.trainings.filter(t => isPast(t.date) || isToday(t.date));
+  const attended = pastTrainings.filter(t => STATE.attendance[t.id]?.present);
+  const pct = pastTrainings.length ? Math.round(attended.length / pastTrainings.length * 100) : 0;
+  // streak: consecutive present from newest backwards
+  let streak = 0;
+  const sorted = [...pastTrainings].sort((a,b) => b.date.localeCompare(a.date));
+  for (const t of sorted) {
+    if (STATE.attendance[t.id]?.present) streak++;
+    else break;
+  }
+  return { total: attended.length, pct, streak, pastCount: pastTrainings.length };
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DASHBOARD
+   ═══════════════════════════════════════════════════════════════════ */
+function renderDashboard() {
+  const stats = getUserStats();
+  document.getElementById('dash-name').textContent = STATE.user?.name || '';
+  document.getElementById('dash-total').textContent  = stats.total;
+  document.getElementById('dash-pct').textContent    = stats.pct + '%';
+  document.getElementById('dash-streak').textContent = stats.streak;
+
+  // Upcoming trainings (next 4)
+  const upcoming = STATE.trainings
+    .filter(t => !isPast(t.date) || isToday(t.date))
+    .sort((a,b) => a.date.localeCompare(b.date))
+    .slice(0, 4);
+  const ul = document.getElementById('upcoming-list');
+  if (upcoming.length === 0) {
+    ul.innerHTML = `<div class="empty-state"><div class="empty-icon">🗓️</div><p>Žádné nadcházející tréninky</p></div>`;
+  } else {
+    ul.innerHTML = upcoming.map(t => trainingCard(t)).join('');
+  }
+
+  // Recent attendance (last 3)
+  const ral = document.getElementById('recent-attendance-list');
+  const past = STATE.trainings.filter(t => isPast(t.date)).sort((a,b) => b.date.localeCompare(a.date)).slice(0,3);
+  if (past.length === 0) {
+    ral.innerHTML = `<div class="empty-state" style="padding:24px"><div class="empty-icon">📋</div><p>Zatím žádná docházka</p></div>`;
+  } else {
+    ral.innerHTML = past.map(t => {
+      const att = STATE.attendance[t.id];
+      const badge = att?.present ? '<span class="training-badge badge-present">✓ Byl/a</span>'
+                  : att         ? '<span class="training-badge badge-absent">✗ Chyběl/a</span>'
+                                : '<span class="training-badge badge-past">Nezaznamenáno</span>';
+      const d = new Date(t.date + 'T00:00:00');
+      return `<div class="training-card past" onclick="navigate('training','${t.id}')">
+        <div class="training-date-box past">
+          <div class="day-num">${d.getDate()}</div>
+          <div class="day-name">${DAYS_CS[d.getDay()]}</div>
+        </div>
+        <div class="training-info">
+          <div class="training-type">${t.icon} ${t.type}</div>
+          <div class="training-meta">${fmtDayShort(t.date)} · ${t.time}</div>
+        </div>
+        ${badge}
+      </div>`;
+    }).join('');
+  }
+}
+
+function trainingCard(t) {
+  const d = new Date(t.date + 'T00:00:00');
+  const reg = STATE.registrations[t.id];
+  const past = isPast(t.date);
+  let cls = t.cancelled ? 'cancelled' : past ? 'past' : reg ? 'registered' : '';
+  let badge = t.cancelled ? '<span class="training-badge badge-cancelled">🔴 Zrušen</span>'
+            : past ? '<span class="training-badge badge-past">Proběhl</span>'
+            : reg  ? '<span class="training-badge badge-registered">✓ Přihlášen</span>'
+            : t.registered.length >= t.capacity ? '<span class="training-badge badge-full">Plno</span>'
+            : '<span class="training-badge badge-open">Volno</span>';
+  const boxCls = t.cancelled ? 'cancelled' : cls;
+  const members = t.cancelled ? '' : ` · ${t.registered.length}/${t.capacity}`;
+  return `<div class="training-card ${cls}" onclick="navigate('training','${t.id}')">
+    <div class="training-date-box ${boxCls}">
+      <div class="day-num">${d.getDate()}</div>
+      <div class="day-name">${DAYS_CS[d.getDay()]}</div>
+    </div>
+    <div class="training-info">
+      <div class="training-type">${t.icon} ${t.type}</div>
+      <div class="training-meta">${fmtDayShort(t.date)} · ${t.time}${members}</div>
+    </div>
+    ${badge}
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CALENDAR
+   ═══════════════════════════════════════════════════════════════════ */
+function changeMonth(dir) {
+  STATE.calMonth.setMonth(STATE.calMonth.getMonth() + dir);
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const m = STATE.calMonth;
+  document.getElementById('cal-month-label').textContent = `${MONTHS_CS[m.getMonth()]} ${m.getFullYear()}`;
+
+  const firstDay = new Date(m.getFullYear(), m.getMonth(), 1);
+  const lastDay  = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+  let startDow = firstDay.getDay(); // 0=Sun
+  // Shift to Mon-start: Sun→6
+  startDow = (startDow + 6) % 7;
+
+  const todayStr = new Date().toISOString().slice(0,10);
+  const trainingMap = {};
+  STATE.trainings.forEach(t => { trainingMap[t.date] = t; });
+
+  let html = ['Po','Út','St','Čt','Pá','So','Ne'].map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+  // Empty cells before
+  for (let i = 0; i < startDow; i++) html += `<div class="cal-day empty"></div>`;
+
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const iso = `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const t = trainingMap[iso];
+    const isT  = iso === todayStr;
+    const reg  = t && STATE.registrations[t.id];
+    const past = iso < todayStr;
+    let cls = '', dot = '';
+    if (isT && t && t.cancelled) { cls = 'cancelled-day'; dot = `<span class="cal-dot red"></span>`; }
+    else if (isT && t) { cls = 'today training'; dot = `<span class="cal-dot white"></span>`; }
+    else if (isT)  { cls = 'today'; }
+    else if (t && t.cancelled) { cls = 'cancelled-day'; dot = `<span class="cal-dot red"></span>`; }
+    else if (t && reg && !past) { cls = 'registered'; dot = `<span class="cal-dot blue"></span>`; }
+    else if (t && !past) { cls = 'training'; dot = `<span class="cal-dot green"></span>`; }
+    else if (t && past)  { cls = 'past-training'; dot = `<span class="cal-dot gray"></span>`; }
+    const click = t ? `onclick="navigate('training','${t.id}')"` : '';
+    html += `<div class="cal-day ${cls}" ${click}>${day}${dot}</div>`;
+  }
+
+  document.getElementById('cal-grid').innerHTML = html;
+
+  // Month training list
+  const monthTrainings = STATE.trainings
+    .filter(t => t.date.startsWith(`${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,'0')}`))
+    .sort((a,b) => a.date.localeCompare(b.date));
+  const mtl = document.getElementById('month-trainings-list');
+  if (monthTrainings.length === 0) {
+    mtl.innerHTML = `<div class="empty-state"><div class="empty-icon">🗓️</div><p>V tomto měsíci žádné tréninky</p></div>`;
+  } else {
+    mtl.innerHTML = monthTrainings.map(t => trainingCard(t)).join('');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TRAINING DETAIL
+   ═══════════════════════════════════════════════════════════════════ */
+function renderTraining() {
+  const id = typeof STATE.selectedTraining === 'string' ? STATE.selectedTraining : STATE.selectedTraining?.id;
+  const t  = STATE.trainings.find(tr => tr.id === id);
+  if (!t) { document.getElementById('training-detail-content').innerHTML = '<div class="empty-state"><p>Trénink nenalezen.</p></div>'; return; }
+  STATE.selectedTraining = t;
+
+  const reg  = STATE.registrations[t.id];
+  const past = isPast(t.date) && !isToday(t.date);
+  const full = t.registered.length >= t.capacity && !reg;
+  const dow  = DAYS_FULL[new Date(t.date + 'T00:00:00').getDay()];
+  if (t.cancelled) {
+    document.getElementById('training-detail-content').innerHTML = `
+      <div class="training-hero" style="background:linear-gradient(135deg,#7f1d1d,#ef4444)">
+        <div class="date-big">${DAYS_FULL[new Date(t.date+'T00:00:00').getDay()].charAt(0).toUpperCase()+DAYS_FULL[new Date(t.date+'T00:00:00').getDay()].slice(1)} ${fmtDate(t.date)}</div>
+        <div class="type-big">🔴 ${t.type}</div>
+        <div class="training-hero-meta"><span>Tento trénink byl zrušen</span></div>
+      </div>
+      <div style="padding:24px;text-align:center;color:var(--text-light)">
+        <div style="font-size:48px;margin-bottom:12px">😔</div>
+        <div style="font-weight:700;font-size:17px;color:var(--text);margin-bottom:8px">Trénink zrušen</div>
+        <div style="font-size:14px">Sleduj WhatsApp skupinu nebo web pro aktuální info.</div>
+      </div>`;
+    document.getElementById('register-bar').innerHTML = `<button class="btn btn-gray btn-full" disabled>Trénink zrušen</button>`;
+    return;
+  }
+
+  // Participants avatars
+  const all = [...new Set([...t.registered, ...(reg ? [STATE.user.email] : [])])];
+  const shown = all.slice(0,6);
+  const extra = all.length - shown.length;
+  const avatarsHtml = shown.map(e => {
+    const u = getAllUsers().find(u => u.email === e);
+    const init = u ? getInitials(u.name) : e.slice(0,2).toUpperCase();
+    return `<div class="avatar-mini" title="${u?.name || e}">${init}</div>`;
+  }).join('') + (extra > 0 ? `<div class="avatar-mini more">+${extra}</div>` : '');
+
+  document.getElementById('training-detail-content').innerHTML = `
+    <div class="training-hero">
+      <div class="date-big">${DAYS_FULL[new Date(t.date+'T00:00:00').getDay()].charAt(0).toUpperCase() + DAYS_FULL[new Date(t.date+'T00:00:00').getDay()].slice(1)} ${fmtDate(t.date)}</div>
+      <div class="type-big">${t.icon} ${t.type}</div>
+      <div class="training-hero-meta">
+        <span>🕠 ${t.time}</span>
+        <span>📍 ${t.location}</span>
+        <span>👤 ${t.coach}</span>
+      </div>
+    </div>
+    <div style="padding:16px">
+      <div class="card">
+        <div class="card-body">
+          <div class="info-row">
+            <div class="info-icon">📝</div>
+            <div><div class="info-label">Popis tréninku</div><div class="info-val" style="font-weight:400;line-height:1.5">${t.description}</div></div>
+          </div>
+          <div class="info-row">
+            <div class="info-icon">👥</div>
+            <div style="flex:1">
+              <div class="info-label">Přihlášení (${all.length}/${t.capacity})</div>
+              <div class="participants-row" style="margin-top:8px">${avatarsHtml || '<span style="color:var(--text-light);font-size:13px">Zatím nikdo</span>'}</div>
+            </div>
+          </div>
+          <div class="info-row">
+            <div class="info-icon">📍</div>
+            <div><div class="info-label">Místo</div><div class="info-val">${t.location}</div></div>
+          </div>
+          ${past ? `
+          <div class="info-row">
+            <div class="info-icon">✅</div>
+            <div>
+              <div class="info-label">Tvoje docházka</div>
+              <div class="info-val" style="margin-top:6px">
+                ${STATE.attendance[t.id]?.present
+                  ? '<span class="training-badge badge-present" style="font-size:14px;padding:5px 14px">✓ Byl/a jsi</span>'
+                  : STATE.attendance[t.id]
+                  ? '<span class="training-badge badge-absent" style="font-size:14px;padding:5px 14px">✗ Chyběl/a jsi</span>'
+                  : '<span class="training-badge badge-past" style="font-size:14px;padding:5px 14px">Nezaznamenáno</span>'}
+              </div>
+            </div>
+          </div>` : ''}
+        </div>
+      </div>
+    </div>`;
+
+  // Register bar
+  const bar = document.getElementById('register-bar');
+  if (past) {
+    bar.innerHTML = `<button class="btn btn-gray btn-full" disabled>Trénink již proběhl</button>`;
+  } else if (isToday(t.date)) {
+    bar.innerHTML = reg
+      ? `<button class="btn btn-red" style="flex:1" onclick="toggleRegister('${t.id}')">Odhlásit se</button>
+         <button class="btn btn-outline" style="flex:1" onclick="showQR()">💳 Zaplatit</button>`
+      : `<button class="btn btn-green" style="flex:1" onclick="toggleRegister('${t.id}')">Přihlásit se</button>
+         <button class="btn btn-outline" style="flex:1" onclick="showQR()">💳 Platba</button>`;
+  } else if (reg) {
+    bar.innerHTML = `<button class="btn btn-red" style="flex:1" onclick="toggleRegister('${t.id}')">✕ Odhlásit se</button>
+                     <button class="btn btn-outline" style="flex:1" onclick="showQR()">💳 Platba</button>`;
+  } else if (full) {
+    bar.innerHTML = `<button class="btn btn-gray btn-full" disabled>Trénink je plný</button>`;
+  } else {
+    bar.innerHTML = `<button class="btn btn-green" style="flex:1" onclick="toggleRegister('${t.id}')">✓ Přihlásit se</button>
+                     <button class="btn btn-outline" style="flex:1" onclick="showQR()">💳 Platba</button>`;
+  }
+}
+
+function toggleRegister(trainingId) {
+  const t = STATE.trainings.find(tr => tr.id === trainingId);
+  if (!t) return;
+  const wasReg = STATE.registrations[trainingId];
+  STATE.registrations[trainingId] = !wasReg;
+  if (!wasReg) {
+    if (!t.registered.includes(STATE.user.email)) t.registered.push(STATE.user.email);
+    showToast('Přihlášení úspěšné! 🎉', 'success');
+  } else {
+    t.registered = t.registered.filter(e => e !== STATE.user.email);
+    showToast('Odhlášení provedeno', '');
+  }
+  saveState();
+  syncRegistrationToNotion(trainingId, !wasReg);
+  renderTraining();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ATTENDANCE
+   ═══════════════════════════════════════════════════════════════════ */
+function renderAttendance() {
+  const stats = getUserStats();
+  document.getElementById('att-stats').innerHTML = `
+    <div class="stat-box"><div class="val">${stats.total}</div><div class="lbl">Tréninků</div></div>
+    <div class="stat-box"><div class="val">${stats.pct}%</div><div class="lbl">Docházka</div></div>
+    <div class="stat-box"><div class="val">${stats.streak}🔥</div><div class="lbl">Série</div></div>`;
+  document.getElementById('att-pct-label').textContent = stats.pct + '%';
+  document.getElementById('att-progress').style.width  = stats.pct + '%';
+  document.getElementById('att-sub').textContent = `${stats.total} z ${stats.pastCount} tréninků`;
+
+  const past = STATE.trainings.filter(t => isPast(t.date)).sort((a,b) => b.date.localeCompare(a.date));
+  const hist = document.getElementById('att-history');
+  if (past.length === 0) {
+    hist.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>Zatím žádná historie</p></div>`;
+    return;
+  }
+  hist.innerHTML = past.map(t => {
+    const att = STATE.attendance[t.id];
+    const d = new Date(t.date + 'T00:00:00');
+    const badge = att?.present ? '<span class="training-badge badge-present">✓ Přítomen/na</span>'
+                : att         ? '<span class="training-badge badge-absent">✗ Chybějící</span>'
+                              : '<span class="training-badge badge-past">—</span>';
+    return `<div class="attendance-item" onclick="navigate('training','${t.id}')" style="cursor:pointer">
+      <div class="att-date-box">
+        <div class="d">${d.getDate()}</div>
+        <div class="m">${MONTHS_CS[d.getMonth()].slice(0,3)}</div>
+      </div>
+      <div class="att-info">
+        <div class="att-type">${t.icon} ${t.type}</div>
+        <div class="att-meta">${DAYS_FULL[d.getDay()]} · ${t.time}</div>
+      </div>
+      ${badge}
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PROFILE
+   ═══════════════════════════════════════════════════════════════════ */
+function renderProfile() {
+  if (!STATE.user) return;
+  const init = getInitials(STATE.user.name);
+  document.getElementById('profile-avatar-lg').textContent = init;
+  document.getElementById('profile-name').textContent  = STATE.user.name;
+  document.getElementById('profile-email').textContent = STATE.user.email;
+  document.getElementById('profile-since').textContent = `Člen od ${fmtDate(STATE.user.joinDate)}`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADMIN (Coach only)
+   ═══════════════════════════════════════════════════════════════════ */
+function renderAdmin() {
+  if (STATE.user?.role !== 'coach') { navigate('dashboard'); return; }
+  const upcoming = STATE.trainings
+    .filter(t => !isPast(t.date) || isToday(t.date))
+    .sort((a,b) => a.date.localeCompare(b.date))
+    .slice(0, 6);
+
+  const sel = document.getElementById('admin-training-select');
+  sel.innerHTML = `<label style="font-size:13px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:8px">Vyber trénink</label>
+    <select id="admin-sel" onchange="renderAdminAttendance(this.value)" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:white">
+      <option value="">-- Vyber --</option>
+      ${upcoming.map(t => `<option value="${t.id}">${fmtDayShort(t.date)} – ${t.type}</option>`).join('')}
+    </select>`;
+  document.getElementById('admin-attendance-list').innerHTML = '<p style="color:var(--text-light);font-size:14px;padding:8px 0">Vyber trénink výše pro zobrazení docházky.</p>';
+}
+
+function renderAdminAttendance(trainingId) {
+  if (!trainingId) return;
+  const t = STATE.trainings.find(tr => tr.id === trainingId);
+  if (!t) return;
+  const users = getAllUsers().filter(u => u.role === 'member');
+  const registered = users.filter(u => t.registered.includes(u.email));
+  const all = registered.length > 0 ? registered : users;
+
+  document.getElementById('admin-attendance-list').innerHTML = all.map(u => {
+    // For admin, we track all users' attendance (stored per-coach in a combined key)
+    const attKey = `tyd_att_${trainingId}_${u.id}`;
+    const present = localStorage.getItem(attKey) === '1';
+    return `<div class="attendance-toggle">
+      <div class="avatar-mini">${getInitials(u.name)}</div>
+      <div class="toggle-name">${u.name}</div>
+      <div class="toggle-btn ${present ? 'on' : ''}" onclick="coachToggleAtt('${trainingId}','${u.id}',this)"></div>
+    </div>`;
+  }).join('') || '<p style="color:var(--text-light);font-size:14px;padding:8px 0">Žádní registrovaní členové.</p>';
+}
+
+function coachToggleAtt(trainingId, userId, btn) {
+  btn.classList.toggle('on');
+  const present = btn.classList.contains('on');
+  localStorage.setItem(`tyd_att_${trainingId}_${userId}`, present ? '1' : '0');
+  // If coach is marking their own attendance, update state
+  if (userId === STATE.user.id) {
+    STATE.attendance[trainingId] = { present };
+    saveState();
+  }
+  syncAttendanceToNotion(trainingId, userId, present);
+  showToast(present ? 'Docházka zaznamenána ✓' : 'Docházka odebrána', present ? 'success' : '');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   QR PAYMENT
+   ═══════════════════════════════════════════════════════════════════ */
+let qrInstance = null;
+
+function showQR() {
+  const modal = document.getElementById('qr-modal');
+  modal.classList.add('open');
+  const isMember = STATE.user?.role === 'coach' || true; // lze upravit dle členství
+  const amount = isMember ? CFG.paymentMember : CFG.paymentNonMember;
+  const vs = STATE.user ? STATE.user.id.replace(/\D/g,'').slice(0,10).padStart(4,'0') : '0000';
+  document.getElementById('qr-vs').textContent = vs;
+  const qrDiv = document.getElementById('qr-code');
+  qrDiv.innerHTML = '';
+  // Czech payment QR (SPD standard) – IBAN CZ9201000001230350890277 = 123-350890277/0100 KB
+  const qrData = `SPD*1.0*ACC:${CFG.bankAccount}*AM:${amount}.00*CC:CZK*MSG:TYMDEJVID*X-VS:${vs}`;
+  try {
+    qrInstance = new QRCode(qrDiv, {
+      text: qrData, width: 200, height: 200,
+      colorDark: '#0f172a', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  } catch(e) {
+    qrDiv.innerHTML = `<div style="padding:20px;background:var(--bg);border-radius:8px;text-align:center;font-size:13px;color:var(--text-light)">QR kód (doplň číslo účtu v konfiguraci)</div>`;
+  }
+}
+
+function closeQR(e) {
+  if (e.target === document.getElementById('qr-modal')) closeQRBtn();
+}
+function closeQRBtn() {
+  document.getElementById('qr-modal').classList.remove('open');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOAST
+   ═══════════════════════════════════════════════════════════════════ */
+let toastTimer;
+function showToast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + (type || '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = '', 3000);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════════════ */
+document.querySelectorAll('.login-tab').forEach(tab => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
+
+// Simulate coach marking attendance for demo (pre-fill some past trainings)
+window.addEventListener('DOMContentLoaded', () => {
+  const past = MOCK_TRAININGS.filter(t => isPast(t.date));
+  past.forEach((t, i) => {
+    // pre-fill demo user attendance
+    const attKey = `tyd_att_${t.id}_u1`;
+    if (!localStorage.getItem(attKey)) {
+      localStorage.setItem(attKey, i % 4 === 3 ? '0' : '1'); // 75% attendance
+    }
+  });
+  // Load coach-set attendance into STATE (for demo user u1)
+  past.forEach(t => {
+    const attKey = `tyd_att_${t.id}_u1`;
+    const present = localStorage.getItem(attKey) === '1';
+    if (localStorage.getItem(attKey) !== null) {
+      // merge into user state when they login
+    }
+  });
+});
+
+// After loginSuccess, load coach-marked attendance
+const _origLogin = window.loginSuccess;
+function loginSuccess(user) {
+  STATE.user = user;
+  loadState();
+  // Load coach-marked attendance
+  STATE.trainings = MOCK_TRAININGS;
+  STATE.trainings.filter(t => isPast(t.date)).forEach(t => {
+    const attKey = `tyd_att_${t.id}_${user.id}`;
+    const val = localStorage.getItem(attKey);
+    if (val !== null) STATE.attendance[t.id] = { present: val === '1' };
+  });
+  localStorage.setItem('tyd_session', user.id);
+  document.getElementById('screen-login').style.display = 'none';
+  document.getElementById('app').classList.remove('hidden');
+  updateHeaderAvatar();
+  if (user.role === 'coach') document.getElementById('admin-menu').style.display = 'flex';
+  navigate('dashboard');
+  tryLoadNotion();
+  showToast(`Vítej, ${user.name.split(' ')[0]}! 👋`, 'success');
+}
+</script>
+</body>
+</html>
