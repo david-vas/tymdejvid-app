@@ -94,12 +94,12 @@
       position: sticky; top: 0; z-index: 100;
       background: white; border-bottom: 1px solid var(--border);
       padding: 0 16px;
-      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+      display: flex; align-items: center; justify-content: space-between;
       height: 56px;
     }
-    .app-header .logo { display: flex; justify-content: center; align-items: center; }
-    .app-header .logo img { height: 36px; width: auto; object-fit: contain; mix-blend-mode: multiply; }
-    .app-header .header-right { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
+    .app-header .logo { display: flex; align-items: center; }
+    .app-header .logo img { height: 40px; width: auto; object-fit: contain; mix-blend-mode: multiply; }
+    .app-header .header-right { display: flex; align-items: center; gap: 10px; }
     .avatar-sm {
       width: 34px; height: 34px; border-radius: 50%;
       background: var(--green-light); color: var(--green-deep);
@@ -154,8 +154,8 @@
       color: white; border-radius: var(--radius); padding: 20px;
       margin-bottom: 16px;
     }
-    .hero-greeting { font-size: 13px; opacity: .8; margin-bottom: 4px; }
-    .hero-name { font-family: 'Baloo 2', sans-serif; font-size: 24px; font-weight: 800; }
+    .hero-greeting { font-size: 14px; opacity: .75; margin-bottom: 2px; letter-spacing: .3px; }
+    .hero-name { font-family: 'Baloo 2', sans-serif; font-size: 28px; font-weight: 800; line-height: 1.1; }
     .hero-stats { display: flex; gap: 16px; margin-top: 16px; }
     .hero-stat { text-align: center; }
     .hero-stat .val { font-family: 'Baloo 2', sans-serif; font-size: 26px; font-weight: 800; }
@@ -648,7 +648,6 @@
 <div id="app" class="hidden">
 
   <header class="app-header">
-    <div></div>
     <div class="logo"><img src="logo.png" alt="#TYMDEJVID" /></div>
     <div class="header-right">
       <div class="notification-btn" onclick="showToast('Žádné nové zprávy','')">🔔<span class="notif-dot"></span></div>
