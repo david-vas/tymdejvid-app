@@ -759,6 +759,7 @@
       <div class="profile-email" id="profile-email"></div>
       <div class="profile-since" id="profile-since"></div>
       <div id="profile-years" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px"></div>
+      <div id="profile-credits" style="display:none;margin-top:12px"></div>
     </div>
     <div class="card" style="margin:16px 16px 0">
       <div class="menu-item" onclick="navigate('attendance')">
@@ -1011,6 +1012,34 @@
   <div class="fullscreen-modal-body" id="rd-body"></div>
   <div class="fullscreen-modal-footer">
     <button class="btn btn-red" style="flex:1" onclick="deleteRunnerFromDetail()">🗑 Smazat účet</button>
+  </div>
+</div>
+
+<!-- ════ CREDIT ADD MODAL ════════════════════════════════════════════ -->
+<div class="fullscreen-modal" id="credit-add-modal">
+  <div class="fullscreen-modal-header">
+    <button class="back-btn" style="padding:0;color:var(--text-light)" onclick="closeCreditModal()">✕</button>
+    <div class="fullscreen-modal-title">Přidat kredity</div>
+    <button class="btn btn-green btn-sm" onclick="saveCreditAdd()">Uložit</button>
+  </div>
+  <div class="fullscreen-modal-body">
+    <div id="credit-modal-runner" style="font-size:15px;font-weight:600;margin-bottom:20px;color:var(--text-main)"></div>
+    <div class="form-group">
+      <label>Počet předplacených tréninků</label>
+      <input type="number" id="credit-sessions-inp" placeholder="4" min="1" />
+    </div>
+    <div class="form-group">
+      <label>Zaplaceno (Kč)</label>
+      <input type="number" id="credit-amount-inp" placeholder="600" min="0" />
+    </div>
+    <div class="form-group">
+      <label>Poznámka</label>
+      <input type="text" id="credit-note-inp" placeholder="Hotovost / převod / datum…" />
+    </div>
+    <div id="credit-history-list"></div>
+  </div>
+  <div class="fullscreen-modal-footer">
+    <button class="btn btn-green" style="flex:1" onclick="saveCreditAdd()">💳 Přidat kredity</button>
   </div>
 </div>
 
@@ -1939,6 +1968,20 @@ function renderProfile() {
   ).join('');
   yearsEl.style.display = years.length ? 'flex' : 'none';
 
+  // Credits badge
+  const creditsEl = document.getElementById('profile-credits');
+  const credits = STATE.user.credits || 0;
+  if (credits > 0) {
+    creditsEl.style.display = 'flex';
+    creditsEl.style.justifyContent = 'center';
+    creditsEl.innerHTML = `<div style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:6px 16px;display:flex;align-items:center;gap:8px">
+      <span style="font-size:18px">🎟</span>
+      <span style="color:#fff;font-size:13px;font-weight:700">${credits} předplacen${credits===1?'ý trénink':credits<=4?'é tréninky':'ých tréninků'}</span>
+    </div>`;
+  } else {
+    creditsEl.style.display = 'none';
+  }
+
   // Calculator menu item
   document.getElementById('calc-menu-item').style.display = 'none';
 
@@ -2210,6 +2253,14 @@ function openRunnerDetail(userId) {
         <div style="font-size:12px;color:var(--text-light)">celkem</div>
       </div>
     </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding:16px;background:${(user.credits||0)>0?'#f0fdf4':'var(--bg)'};border-radius:var(--radius-sm);border:2px solid ${(user.credits||0)>0?'var(--green)':'var(--border)'}">
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:4px">🎟 Předplacené tréninky</div>
+        <div style="font-size:36px;font-weight:800;font-family:'Baloo 2',sans-serif;color:${(user.credits||0)>0?'var(--green)':'var(--text-light)'};line-height:1">${user.credits||0}</div>
+        <div style="font-size:12px;color:var(--text-light);margin-top:2px">${(user.credits||0)===0?'žádné kredity':((user.credits||0)===1?'trénink zbývá':((user.credits||0)<=4?'tréninky zbývají':'tréninků zbývá'))}</div>
+      </div>
+      <button class="btn btn-green" onclick="openCreditModal('${user.id}')">+ Přidat</button>
+    </div>
     <div style="font-size:13px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Historie docházky</div>
     <div>${attRows || '<p style="color:var(--text-light);font-size:14px">Žádná data.</p>'}</div>
   `;
@@ -2235,6 +2286,59 @@ function deleteRunnerFromDetail() {
   saveUsers(getAllUsers().filter(u => u.id !== id));
   closeRunnerDetail();
   showToast('Účet smazán', '');
+}
+
+/* ── CREDIT SYSTEM ───────────────────────────────────────────────── */
+let creditTargetUserId = null;
+
+function openCreditModal(userId) {
+  creditTargetUserId = userId;
+  const user = getAllUsers().find(u => u.id === userId);
+  if (!user) return;
+  document.getElementById('credit-modal-runner').textContent = '🏃 ' + user.name;
+  document.getElementById('credit-sessions-inp').value = '';
+  document.getElementById('credit-amount-inp').value = '';
+  document.getElementById('credit-note-inp').value = '';
+  // Show credit history
+  const hist = (user.creditHistory || []).slice().reverse();
+  document.getElementById('credit-history-list').innerHTML = hist.length ? `
+    <div style="font-size:13px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px">Historie plateb</div>
+    ${hist.map(h => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--green)">+${h.sessions} tréninků${h.amount ? ' · ' + h.amount + ' Kč' : ''}</div>
+          <div style="font-size:12px;color:var(--text-light)">${fmtDate(h.date)}${h.note ? ' · ' + h.note : ''}</div>
+        </div>
+      </div>`).join('')}` : '';
+  document.getElementById('credit-add-modal').classList.add('open');
+}
+
+function closeCreditModal() {
+  document.getElementById('credit-add-modal').classList.remove('open');
+  creditTargetUserId = null;
+}
+
+function saveCreditAdd() {
+  const sessions = parseInt(document.getElementById('credit-sessions-inp').value);
+  if (!sessions || sessions < 1) { showToast('Zadej počet tréninků', 'error'); return; }
+  const amount = document.getElementById('credit-amount-inp').value;
+  const note   = document.getElementById('credit-note-inp').value.trim();
+  const users  = getAllUsers();
+  const idx    = users.findIndex(u => u.id === creditTargetUserId);
+  if (idx === -1) return;
+  users[idx].credits = (users[idx].credits || 0) + sessions;
+  users[idx].creditHistory = users[idx].creditHistory || [];
+  users[idx].creditHistory.push({
+    date: new Date().toISOString().slice(0,10),
+    sessions,
+    amount: amount ? parseInt(amount) : null,
+    note
+  });
+  saveUsers(users);
+  showToast(`✅ Přidáno ${sessions} tréninků · celkem ${users[idx].credits}`, 'success');
+  const targetId = creditTargetUserId;
+  closeCreditModal();
+  openRunnerDetail(targetId);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2299,6 +2403,26 @@ function coachToggleAtt(trainingId, userId, btn) {
     saveState();
   }
   syncAttendanceToNotion(trainingId, userId, present);
+
+  // Credit auto-deduction / refund
+  const allUsers = getAllUsers();
+  const uIdx = allUsers.findIndex(u => u.id === userId);
+  if (uIdx !== -1) {
+    const u = allUsers[uIdx];
+    const creditUsed = u.creditUsed || {};
+    if (present && !creditUsed[trainingId] && (u.credits || 0) > 0) {
+      allUsers[uIdx].credits = u.credits - 1;
+      allUsers[uIdx].creditUsed = { ...creditUsed, [trainingId]: true };
+      saveUsers(allUsers);
+      showToast(`Docházka ✓ · 🎟 zbývá ${allUsers[uIdx].credits} tréninků`, 'success');
+      return;
+    } else if (!present && creditUsed[trainingId]) {
+      allUsers[uIdx].credits = (u.credits || 0) + 1;
+      const { [trainingId]: _, ...rest } = creditUsed;
+      allUsers[uIdx].creditUsed = rest;
+      saveUsers(allUsers);
+    }
+  }
   showToast(present ? 'Docházka zaznamenána ✓' : 'Docházka odebrána', present ? 'success' : '');
 }
 
