@@ -67,7 +67,7 @@
     .login-logo {
       text-align: center; margin-bottom: 32px;
     }
-    .login-logo .logo-img { height: 90px; object-fit: contain; mix-blend-mode: multiply; }
+    .login-logo .logo-img { height: 90px; object-fit: contain; mix-blend-mode: multiply; display: block; margin: 0 auto; }
     .login-logo .subtitle { color: var(--text-light); font-size: 13px; margin-top: 4px; }
     .login-tabs { display: flex; gap: 0; margin-bottom: 28px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
     .login-tab { flex: 1; padding: 10px; text-align: center; font-family: 'Baloo 2', sans-serif; font-weight: 600; font-size: 14px; background: var(--bg); color: var(--text-light); cursor: pointer; transition: all .2s; }
@@ -1045,11 +1045,15 @@
     <div class="form-group"><label>Název závodu</label><input type="text" id="race-name-inp" placeholder="Prague Half Marathon" /></div>
     <div class="form-row">
       <div class="form-group"><label>Datum</label><input type="date" id="race-date-inp" /></div>
-      <div class="form-group"><label>Vzdálenost</label><input type="text" id="race-dist-inp" placeholder="21,1 km" /></div>
+      <div class="form-group"><label>Vzdálenost</label><input type="text" id="race-dist-inp" placeholder="21,1 km" oninput="calcRacePace()" /></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Čas</label><input type="text" id="race-time-inp" placeholder="1:45:32" /></div>
+      <div class="form-group"><label>Čas</label><input type="text" id="race-time-inp" placeholder="1:45:32" oninput="calcRacePace()" /></div>
       <div class="form-group"><label>Pořadí</label><input type="number" id="race-place-inp" placeholder="42" min="1" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Tempo / km <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--text-light)">(auto)</span></label><input type="text" id="race-pace-inp" placeholder="4:59" /></div>
+      <div class="form-group"></div>
     </div>
   </div>
   <div class="fullscreen-modal-footer">
@@ -1995,6 +1999,7 @@ function renderProfile() {
           </div>
           <div class="race-result">
             <div class="race-time-val">${r.time || '—'}</div>
+            ${r.pace ? `<div class="race-place">${r.pace}/km</div>` : ''}
             ${r.place ? `<div class="race-place">${r.place}. místo</div>` : ''}
           </div>
         </div>`).join('');
@@ -2070,6 +2075,7 @@ function openRaceEdit(id) {
     document.getElementById('race-dist-inp').value  = '';
     document.getElementById('race-time-inp').value  = '';
     document.getElementById('race-place-inp').value = '';
+    document.getElementById('race-pace-inp').value  = '';
   } else {
     const race = (STATE.user.races || []).find(r => r.id === id);
     if (!race) return;
@@ -2078,8 +2084,26 @@ function openRaceEdit(id) {
     document.getElementById('race-dist-inp').value  = race.distance || '';
     document.getElementById('race-time-inp').value  = race.time     || '';
     document.getElementById('race-place-inp').value = race.place    || '';
+    document.getElementById('race-pace-inp').value  = race.pace     || '';
   }
   document.getElementById('race-modal').classList.add('open');
+}
+
+function calcRacePace() {
+  const distStr = document.getElementById('race-dist-inp').value.replace(',', '.');
+  const timeStr = document.getElementById('race-time-inp').value.trim();
+  const dist = parseFloat(distStr);
+  if (!dist || !timeStr) return;
+  const parts = timeStr.split(':').map(Number);
+  let secs = 0;
+  if (parts.length === 3) secs = parts[0]*3600 + parts[1]*60 + parts[2];
+  else if (parts.length === 2) secs = parts[0]*60 + parts[1];
+  else return;
+  if (!secs) return;
+  const paceSecs = Math.round(secs / dist);
+  const mm = Math.floor(paceSecs / 60);
+  const ss = String(paceSecs % 60).padStart(2, '0');
+  document.getElementById('race-pace-inp').value = `${mm}:${ss}`;
 }
 
 function closeRaceModal() {
@@ -2097,6 +2121,7 @@ function saveRace() {
     distance: document.getElementById('race-dist-inp').value.trim(),
     time:     document.getElementById('race-time-inp').value.trim(),
     place:    document.getElementById('race-place-inp').value ? parseInt(document.getElementById('race-place-inp').value) : null,
+    pace:     document.getElementById('race-pace-inp').value.trim(),
   };
   const races = STATE.user.races || [];
   if (editingRaceId) {
