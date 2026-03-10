@@ -67,7 +67,7 @@
     .login-logo {
       text-align: center; margin-bottom: 32px;
     }
-    .login-logo .logo-img { height: 90px; object-fit: contain; mix-blend-mode: multiply; display: block; margin: 0 auto; }
+    .login-logo .logo-img { width: 220px; height: auto; object-fit: contain; mix-blend-mode: multiply; display: block; margin: 0 auto; outline: none; border: none; }
     .login-logo .subtitle { color: var(--text-light); font-size: 13px; margin-top: 4px; }
     .login-tabs { display: flex; gap: 0; margin-bottom: 28px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
     .login-tab { flex: 1; padding: 10px; text-align: center; font-family: 'Baloo 2', sans-serif; font-weight: 600; font-size: 14px; background: var(--bg); color: var(--text-light); cursor: pointer; transition: all .2s; }
@@ -94,12 +94,12 @@
       position: sticky; top: 0; z-index: 100;
       background: white; border-bottom: 1px solid var(--border);
       padding: 0 16px;
-      display: flex; align-items: center; justify-content: flex-end;
+      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
       height: 56px;
     }
-    .app-header .logo { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; }
-    .app-header .logo img { height: 32px; object-fit: contain; mix-blend-mode: multiply; }
-    .app-header .header-right { display: flex; align-items: center; gap: 10px; }
+    .app-header .logo { display: flex; justify-content: center; align-items: center; }
+    .app-header .logo img { height: 36px; width: auto; object-fit: contain; mix-blend-mode: multiply; }
+    .app-header .header-right { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
     .avatar-sm {
       width: 34px; height: 34px; border-radius: 50%;
       background: var(--green-light); color: var(--green-deep);
@@ -648,6 +648,7 @@
 <div id="app" class="hidden">
 
   <header class="app-header">
+    <div></div>
     <div class="logo"><img src="logo.png" alt="#TYMDEJVID" /></div>
     <div class="header-right">
       <div class="notification-btn" onclick="showToast('Žádné nové zprávy','')">🔔<span class="notif-dot"></span></div>
