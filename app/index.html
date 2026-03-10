@@ -67,7 +67,7 @@
     .login-logo {
       text-align: center; margin-bottom: 32px;
     }
-    .login-logo .hashtag { font-family: 'Baloo 2', sans-serif; font-size: 36px; font-weight: 800; color: var(--green); }
+    .login-logo .logo-img { height: 90px; object-fit: contain; mix-blend-mode: multiply; }
     .login-logo .subtitle { color: var(--text-light); font-size: 13px; margin-top: 4px; }
     .login-tabs { display: flex; gap: 0; margin-bottom: 28px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
     .login-tab { flex: 1; padding: 10px; text-align: center; font-family: 'Baloo 2', sans-serif; font-weight: 600; font-size: 14px; background: var(--bg); color: var(--text-light); cursor: pointer; transition: all .2s; }
@@ -94,10 +94,11 @@
       position: sticky; top: 0; z-index: 100;
       background: white; border-bottom: 1px solid var(--border);
       padding: 0 16px;
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex; align-items: center; justify-content: flex-end;
       height: 56px;
     }
-    .app-header .logo { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 20px; color: var(--green); }
+    .app-header .logo { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; }
+    .app-header .logo img { height: 32px; object-fit: contain; mix-blend-mode: multiply; }
     .app-header .header-right { display: flex; align-items: center; gap: 10px; }
     .avatar-sm {
       width: 34px; height: 34px; border-radius: 50%;
@@ -416,6 +417,9 @@
     .race-result { text-align: right; flex-shrink: 0; }
     .race-time-val { font-family: 'Baloo 2', sans-serif; font-weight: 700; color: var(--green); font-size: 15px; }
     .race-place { font-size: 11px; color: var(--text-light); }
+    .race-countdown { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 13px; padding: 3px 10px; border-radius: 20px; background: var(--green-light); color: var(--green); white-space: nowrap; }
+    .race-countdown.urgent { background: #fef3c7; color: #92400e; }
+    .race-section-label { font-size: 12px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: .5px; padding: 10px 0 4px; }
     .profile-name { font-family: 'Baloo 2', sans-serif; font-size: 24px; font-weight: 800; }
     .profile-email { font-size: 13px; opacity: .8; margin-top: 2px; }
     .profile-since { font-size: 12px; opacity: .7; margin-top: 8px; }
@@ -549,7 +553,7 @@
 <div id="screen-login">
   <div class="login-card">
     <div class="login-logo">
-      <div class="hashtag">#TYMDEJVID</div>
+      <img src="logo.png" alt="#TYMDEJVID" class="logo-img" />
       <div class="subtitle">Běžecký spolek · České Budějovice</div>
     </div>
 
@@ -644,7 +648,7 @@
 <div id="app" class="hidden">
 
   <header class="app-header">
-    <div class="logo">#TYMDEJVID</div>
+    <div class="logo"><img src="logo.png" alt="#TYMDEJVID" /></div>
     <div class="header-right">
       <div class="notification-btn" onclick="showToast('Žádné nové zprávy','')">🔔<span class="notif-dot"></span></div>
       <div class="avatar-sm" id="header-avatar" onclick="navigate('profile')"></div>
@@ -1944,24 +1948,58 @@ function renderProfile() {
       </div>`).join('')}
   </div>`;
 
-  // Races
-  const races = (STATE.user.races || []).slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  // Races — split upcoming vs past
+  const today = new Date().toISOString().slice(0,10);
+  const allRaces = STATE.user.races || [];
+  const upcoming = allRaces.filter(r => r.date && r.date >= today).sort((a,b) => a.date.localeCompare(b.date));
+  const pastRaces = allRaces.filter(r => !r.date || r.date < today).sort((a,b) => (b.date||'').localeCompare(a.date||''));
   const racesEl = document.getElementById('profile-races-content');
-  if (races.length === 0) {
+
+  function raceCountdown(isoDate) {
+    const d0 = new Date(); d0.setHours(0,0,0,0);
+    const d1 = new Date(isoDate); d1.setHours(0,0,0,0);
+    const diff = Math.round((d1 - d0) / 86400000);
+    if (diff === 0) return { text: 'Dnes! 🔥', urgent: true };
+    if (diff === 1) return { text: 'Zítra', urgent: true };
+    if (diff < 14)  return { text: `za ${diff} ${diff < 5 ? 'dny' : 'dní'}`, urgent: diff <= 7 };
+    const w = Math.round(diff / 7);
+    return { text: `za ${w} ${w === 1 ? 'týden' : w < 5 ? 'týdny' : 'týdnů'}`, urgent: false };
+  }
+
+  if (allRaces.length === 0) {
     racesEl.innerHTML = `<div class="empty-state" style="padding:24px"><div class="empty-icon">🏁</div><p>Zatím žádné závody.<br>Přidej svůj první závod!</p></div>`;
   } else {
-    racesEl.innerHTML = races.map(r => `
-      <div class="race-item" onclick="openRaceEdit('${r.id}')">
-        <div class="race-icon-box">🏁</div>
-        <div class="race-info">
-          <div class="race-name">${r.name}</div>
-          <div class="race-meta">${r.date ? fmtDate(r.date) : ''}${r.distance ? ' · ' + r.distance : ''}</div>
-        </div>
-        <div class="race-result">
-          <div class="race-time-val">${r.time || '—'}</div>
-          ${r.place ? `<div class="race-place">${r.place}. místo</div>` : ''}
-        </div>
-      </div>`).join('');
+    let html = '';
+    if (upcoming.length) {
+      html += `<div class="race-section-label">📅 Plánované</div>`;
+      html += upcoming.map(r => {
+        const cd = raceCountdown(r.date);
+        return `<div class="race-item" onclick="openRaceEdit('${r.id}')">
+          <div class="race-icon-box">📅</div>
+          <div class="race-info">
+            <div class="race-name">${r.name}</div>
+            <div class="race-meta">${fmtDate(r.date)}${r.distance ? ' · ' + r.distance : ''}</div>
+          </div>
+          <div class="race-countdown ${cd.urgent ? 'urgent' : ''}">${cd.text}</div>
+        </div>`;
+      }).join('');
+    }
+    if (pastRaces.length) {
+      html += `<div class="race-section-label" style="margin-top:${upcoming.length?'12px':'0'}">🏁 Proběhlé</div>`;
+      html += pastRaces.map(r => `
+        <div class="race-item" onclick="openRaceEdit('${r.id}')">
+          <div class="race-icon-box">🏁</div>
+          <div class="race-info">
+            <div class="race-name">${r.name}</div>
+            <div class="race-meta">${r.date ? fmtDate(r.date) : ''}${r.distance ? ' · ' + r.distance : ''}</div>
+          </div>
+          <div class="race-result">
+            <div class="race-time-val">${r.time || '—'}</div>
+            ${r.place ? `<div class="race-place">${r.place}. místo</div>` : ''}
+          </div>
+        </div>`).join('');
+    }
+    racesEl.innerHTML = html;
   }
 }
 
