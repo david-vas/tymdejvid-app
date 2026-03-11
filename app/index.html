@@ -431,6 +431,22 @@
     .race-section-label { font-size: 12px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: .5px; padding: 10px 0 4px; }
     .pay-method-btn { background: var(--bg); border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; color: var(--text-main); font-family: inherit; }
     .pay-method-btn.selected { border-color: var(--green); background: var(--green-light); color: var(--green-deep); }
+    .stripe-pay-btn {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; padding: 16px; border-radius: var(--radius-sm); border: none;
+      background: #0f172a; color: white; font-size: 16px; font-weight: 700;
+      cursor: pointer; font-family: 'Baloo 2', sans-serif; margin-bottom: 8px;
+      box-shadow: 0 2px 12px rgba(15,23,42,.2); transition: opacity .15s;
+    }
+    .stripe-pay-btn:active { opacity: .85; }
+    .stripe-pay-divider {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--text-light); font-size: 12px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .5px; margin: 12px 0;
+    }
+    .stripe-pay-divider::before, .stripe-pay-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
     .topup-pkg { background: var(--bg); border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 16px; text-align: center; cursor: pointer; transition: all .15s; }
     .topup-pkg.selected { border-color: var(--green); background: var(--green-light); }
     .topup-pkg-count { font-family: 'Baloo 2', sans-serif; font-size: 28px; font-weight: 800; color: var(--green); line-height: 1; }
@@ -1184,6 +1200,15 @@
         <div style="font-size:44px;font-weight:800;font-family:'Baloo 2',sans-serif;color:var(--green);line-height:1" id="topup-qr-amount-big">—</div>
         <div style="font-size:13px;color:var(--green);font-weight:600;margin-top:6px" id="topup-qr-summary"></div>
       </div>
+      <!-- Stripe online platba (zobrazí se jen když je stripeLinks vyplněn) -->
+      <div id="topup-stripe-wrap" style="display:none">
+        <button class="stripe-pay-btn" id="topup-stripe-btn" onclick="openStripeLink()">
+          <span style="font-size:20px">💳</span>
+          <span>Zaplatit online</span>
+          <span style="font-size:13px;opacity:.7;font-weight:400">Apple Pay · Google Pay · karta</span>
+        </button>
+        <div class="stripe-pay-divider">nebo převodem</div>
+      </div>
       <!-- QR kód -->
       <div style="text-align:center;margin-bottom:16px">
         <div id="topup-qr-code" style="display:inline-block;padding:16px;background:white;border-radius:16px;border:1px solid var(--border);box-shadow:0 2px 16px rgba(0,0,0,.08)"></div>
@@ -1287,6 +1312,16 @@ const CFG = {
   paymentMember:   150,             // Kč člen #tymdejvid
   paymentNonMember:200,             // Kč nečlen
   paymentAmount:   150,             // default (člen)
+
+  // Stripe Payment Links (Apple Pay / Google Pay / karta)
+  // Vytvoř linky na dashboard.stripe.com → Payment Links
+  // Produkt: "Předplacené tréninky TYMDEJVID", cena per kus 150 Kč
+  // Pro každý balíček nastav počet kusů nebo vytvoř 3 separátní linky
+  stripeLinks: {
+    4:  '',   // sem vlož link pro 4 tréninky  (600 Kč)
+    8:  '',   // sem vlož link pro 8 tréninků  (1 200 Kč)
+    12: '',   // sem vlož link pro 12 tréninků (1 800 Kč)
+  },
 
   // Tréninky
   trainingDays:    [2, 4],          // 2=úterý, 4=čtvrtek (JS: 0=ne, 1=po, ...)
@@ -2739,12 +2774,20 @@ function stepCustomSessions(delta) {
   generateTopupQR();
 }
 
+function openStripeLink() {
+  const link = (CFG.stripeLinks || {})[topupSessions];
+  if (link) window.open(link, '_blank', 'noopener');
+}
+
 function generateTopupQR() {
   const vs = STATE.user ? STATE.user.id.replace(/\D/g,'').slice(0,10).padStart(4,'0') : '0000';
   const sessLabel = creditSessionsLabel(topupSessions);
   document.getElementById('topup-qr-amount-big').textContent = topupAmount.toLocaleString('cs-CZ') + ' Kč';
   document.getElementById('topup-qr-summary').textContent = `${topupSessions} ${sessLabel}`;
   document.getElementById('topup-qr-vs').textContent = vs;
+  // Zobraz Stripe tlačítko jen pokud je link vyplněn
+  const stripeLink = (CFG.stripeLinks || {})[topupSessions];
+  document.getElementById('topup-stripe-wrap').style.display = stripeLink ? 'block' : 'none';
   const qrDiv = document.getElementById('topup-qr-code');
   qrDiv.innerHTML = '';
   const qrData = `SPD*1.0*ACC:${CFG.bankAccount}*AM:${topupAmount}.00*CC:CZK*MSG:TYMDEJVID*X-VS:${vs}`;
