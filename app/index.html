@@ -135,8 +135,31 @@
     .notif-dot {
       position: absolute; top: 6px; right: 6px;
       width: 8px; height: 8px; border-radius: 50%; background: #ef4444;
-      border: 2px solid white;
+      border: 2px solid white; display: none;
     }
+    .notif-dot.show { display: block; }
+
+    /* ── NEWS PANEL ──────────────────────────────────── */
+    .news-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 299; display: none; }
+    .news-overlay.open { display: block; }
+    .news-panel {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%) translateY(100%);
+      width: 100%; max-width: 480px; background: white;
+      border-radius: 20px 20px 0 0; box-shadow: 0 -8px 32px rgba(0,0,0,.18);
+      z-index: 300; max-height: 85vh; display: flex; flex-direction: column;
+      transition: transform .32s cubic-bezier(.4,0,.2,1);
+    }
+    .news-panel.open { transform: translateX(-50%) translateY(0); }
+    .news-panel-handle { width: 42px; height: 4px; background: #d1d5db; border-radius: 2px; margin: 12px auto 6px; flex-shrink: 0; }
+    .news-panel-header { display: flex; align-items: center; padding: 4px 16px 14px; gap: 10px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+    .news-panel-title { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 18px; flex: 1; }
+    .news-panel-body { overflow-y: auto; padding: 12px 16px 32px; flex: 1; }
+    .news-item { border-radius: var(--radius-sm); border: 1px solid var(--border); padding: 14px 14px 12px; margin-bottom: 10px; background: white; position: relative; }
+    .news-item.unread { border-left: 3px solid var(--green); background: #f0fdf4; }
+    .news-item-title { font-weight: 700; font-size: 15px; margin-bottom: 3px; padding-right: 28px; }
+    .news-item-meta { font-size: 11px; color: var(--text-light); margin-bottom: 8px; }
+    .news-item-body { font-size: 14px; line-height: 1.6; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+    .news-item-del { position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 16px; cursor: pointer; color: var(--text-light); padding: 2px 6px; }
 
     /* ── BOTTOM NAV ──────────────────────────────────── */
     .bottom-nav {
@@ -805,13 +828,49 @@
   </div>
 </div>
 
+<!-- ════ NEWS PANEL (slide-up) ═══════════════════════════════════════ -->
+<div class="news-overlay" id="news-overlay" onclick="closeNewsPanel()"></div>
+<div class="news-panel" id="news-panel">
+  <div class="news-panel-handle"></div>
+  <div class="news-panel-header">
+    <span class="news-panel-title">📣 Novinky</span>
+    <button id="news-compose-btn" class="btn btn-green btn-sm" onclick="openNewsCompose()" style="display:none">+ Napsat</button>
+  </div>
+  <div class="news-panel-body" id="news-panel-body">
+    <p style="color:var(--text-light);font-size:14px;text-align:center;margin-top:32px">Žádné novinky</p>
+  </div>
+</div>
+
+<!-- ════ NEWS COMPOSE MODAL ══════════════════════════════════════════ -->
+<div class="fullscreen-modal" id="news-compose-modal">
+  <div class="fullscreen-modal-header">
+    <button class="back-btn" style="padding:0;color:var(--text-light)" onclick="closeNewsCompose()">✕</button>
+    <div class="fullscreen-modal-title">Nová novinka</div>
+    <button class="btn btn-green btn-sm" onclick="saveNews()">Zveřejnit</button>
+  </div>
+  <div class="fullscreen-modal-body">
+    <div class="form-group">
+      <label>Nadpis</label>
+      <input type="text" id="nc-title" placeholder="Název novinky…" />
+    </div>
+    <div class="form-group">
+      <label>Text</label>
+      <textarea id="nc-body" rows="7" placeholder="Napiš novinku pro členy týmu…"></textarea>
+    </div>
+    <p class="form-error" id="nc-error"></p>
+  </div>
+  <div class="fullscreen-modal-footer">
+    <button class="btn btn-green" style="flex:1" onclick="saveNews()">📣 Zveřejnit</button>
+  </div>
+</div>
+
 <!-- ════ APP ══════════════════════════════════════════════════════════ -->
 <div id="app" class="hidden">
 
   <header class="app-header">
     <div class="logo" onclick="navigate('dashboard')" style="cursor:pointer"><img src="logo.png" alt="#TYMDEJVID" /></div>
     <div class="header-right">
-      <div class="notification-btn" onclick="showToast('Žádné nové zprávy','')">🔔<span class="notif-dot"></span></div>
+      <div class="notification-btn" onclick="openNewsPanel()">🔔<span class="notif-dot" id="notif-dot"></span></div>
       <div class="avatar-sm" id="header-avatar" onclick="navigate('profile')"></div>
     </div>
   </header>
@@ -4530,6 +4589,134 @@ const MUNAKU_RACE = {
   url:      'https://davidvas.cz/okolo-munaku/',
 };
 
+/* ══════════════════════════════════════════════════════════════════
+   NEWS / NOVINKY
+   ══════════════════════════════════════════════════════════════════ */
+let _news = [];   // { id, title, body, createdAt, authorName }
+
+/** Load news from Firestore, update dot */
+async function loadNews() {
+  try {
+    const snap = await db.collection('news').orderBy('createdAt', 'desc').limit(50).get();
+    _news = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) {
+    _news = [];
+  }
+  updateNewsDot();
+}
+
+/** Show/hide red dot based on unread news */
+function updateNewsDot() {
+  const lastRead = localStorage.getItem('lastReadNews') || '1970-01-01T00:00:00Z';
+  const hasUnread = _news.some(n => n.createdAt > lastRead);
+  document.getElementById('notif-dot')?.classList.toggle('show', hasUnread);
+}
+
+/** Open the news slide-up panel */
+function openNewsPanel() {
+  // Mark all as read
+  if (_news.length) {
+    localStorage.setItem('lastReadNews', new Date().toISOString());
+    updateNewsDot();
+  }
+  // Show compose button for coach
+  const isCoach = STATE.user?.role === 'coach';
+  document.getElementById('news-compose-btn').style.display = isCoach ? 'inline-flex' : 'none';
+  renderNewsPanel();
+  document.getElementById('news-panel').classList.add('open');
+  document.getElementById('news-overlay').classList.add('open');
+}
+
+function closeNewsPanel() {
+  document.getElementById('news-panel').classList.remove('open');
+  document.getElementById('news-overlay').classList.remove('open');
+}
+
+/** Render news list into the panel */
+function renderNewsPanel() {
+  const lastRead = localStorage.getItem('lastReadNews') || new Date().toISOString();
+  const isCoach  = STATE.user?.role === 'coach';
+  const body     = document.getElementById('news-panel-body');
+
+  if (!_news.length) {
+    body.innerHTML = '<p style="color:var(--text-light);font-size:14px;text-align:center;margin-top:32px">Zatím žádné novinky 🙂</p>';
+    return;
+  }
+
+  body.innerHTML = _news.map(n => {
+    const unread = n.createdAt < lastRead ? '' : 'unread';
+    const date   = new Date(n.createdAt).toLocaleDateString('cs-CZ', { day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    const del    = isCoach ? `<button class="news-item-del" onclick="deleteNews('${n.id}')" title="Smazat">🗑</button>` : '';
+    return `
+      <div class="news-item ${unread}" id="news-item-${n.id}">
+        ${del}
+        <div class="news-item-title">${escHtml(n.title)}</div>
+        <div class="news-item-meta">${date} · ${escHtml(n.authorName || 'Trenér')}</div>
+        <div class="news-item-body">${escHtml(n.body)}</div>
+      </div>`;
+  }).join('');
+}
+
+/** Coach: open compose modal */
+function openNewsCompose() {
+  document.getElementById('nc-title').value = '';
+  document.getElementById('nc-body').value  = '';
+  document.getElementById('nc-error').classList.remove('show');
+  document.getElementById('news-compose-modal').classList.add('open');
+}
+function closeNewsCompose() {
+  document.getElementById('news-compose-modal').classList.remove('open');
+}
+
+/** Coach: save new news item to Firestore */
+async function saveNews() {
+  const title = document.getElementById('nc-title').value.trim();
+  const body  = document.getElementById('nc-body').value.trim();
+  const errEl = document.getElementById('nc-error');
+  errEl.classList.remove('show');
+  if (!title || !body) {
+    errEl.textContent = 'Vyplň nadpis i text novinky.';
+    errEl.classList.add('show'); return;
+  }
+  try {
+    const doc = {
+      title,
+      body,
+      createdAt:  new Date().toISOString(),
+      authorName: STATE.user?.name || 'Trenér',
+    };
+    const ref = await db.collection('news').add(doc);
+    _news.unshift({ id: ref.id, ...doc });
+    closeNewsCompose();
+    // Mark just-posted news as read for coach
+    localStorage.setItem('lastReadNews', new Date().toISOString());
+    updateNewsDot();
+    renderNewsPanel();
+    showToast('📣 Novinka zveřejněna!', 'success');
+  } catch(e) {
+    errEl.textContent = 'Chyba uložení: ' + (e.message || e.code);
+    errEl.classList.add('show');
+  }
+}
+
+/** Coach: delete a news item */
+async function deleteNews(id) {
+  if (!confirm('Smazat tuto novinku?')) return;
+  try {
+    await db.collection('news').doc(id).delete();
+    _news = _news.filter(n => n.id !== id);
+    renderNewsPanel();
+    showToast('Novinka smazána', '');
+  } catch(e) {
+    showToast('Chyba mazání: ' + e.message, '');
+  }
+}
+
+/** Simple HTML escaping helper */
+function escHtml(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 async function loginSuccess(user) {
   STATE.user          = user;
   STATE.attendance    = user.attendance    || {};
@@ -4562,6 +4749,7 @@ async function loginSuccess(user) {
   document.getElementById('admin-menu').style.display = user.role === 'coach' ? 'flex' : 'none';
   navigate('dashboard');
   tryLoadNotion();
+  loadNews();   // načti novinky a zobraz tečku pokud jsou nové
   showToast(`Vítej, ${user.name.split(' ')[0]}! 👋`, 'success');
 }
 
