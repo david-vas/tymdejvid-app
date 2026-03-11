@@ -85,6 +85,8 @@
     .form-group input:focus { outline: none; border-color: var(--green); }
     .form-error { color: #ef4444; font-size: 13px; margin-top: 8px; display: none; }
     .form-error.show { display: block; }
+    .pace-hint { font-size: 12px; font-weight: 700; color: var(--green); white-space: nowrap;
+      min-width: 72px; text-align: right; transition: opacity .2s; }
 
     /* ── PENDING / REJECTED SCREEN ──────────────────── */
     #screen-pending {
@@ -1441,11 +1443,41 @@
   </div>
   <div class="fullscreen-modal-body">
     <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Zadej čas ve formátu mm:ss nebo h:mm:ss</p>
-    <div class="form-group"><label>1 km</label><input type="text" id="rec-1k" placeholder="3:45" /></div>
-    <div class="form-group"><label>5 km</label><input type="text" id="rec-5k" placeholder="20:30" /></div>
-    <div class="form-group"><label>10 km</label><input type="text" id="rec-10k" placeholder="42:15" /></div>
-    <div class="form-group"><label>Půlmaraton</label><input type="text" id="rec-hm" placeholder="1:32:00" /></div>
-    <div class="form-group"><label>Maraton</label><input type="text" id="rec-m" placeholder="3:10:00" /></div>
+    <div class="form-group">
+      <label>1 km</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="text" id="rec-1k" placeholder="3:45" inputmode="numeric" oninput="calcRecordPace('1k',1)" style="flex:1" />
+        <span id="pace-1k" class="pace-hint"></span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>5 km</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="text" id="rec-5k" placeholder="20:30" inputmode="numeric" oninput="calcRecordPace('5k',5)" style="flex:1" />
+        <span id="pace-5k" class="pace-hint"></span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>10 km</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="text" id="rec-10k" placeholder="42:15" inputmode="numeric" oninput="calcRecordPace('10k',10)" style="flex:1" />
+        <span id="pace-10k" class="pace-hint"></span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Půlmaraton</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="text" id="rec-hm" placeholder="1:32:00" inputmode="numeric" oninput="calcRecordPace('hm',21.0975)" style="flex:1" />
+        <span id="pace-hm" class="pace-hint"></span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Maraton</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="text" id="rec-m" placeholder="3:10:00" inputmode="numeric" oninput="calcRecordPace('m',42.195)" style="flex:1" />
+        <span id="pace-m" class="pace-hint"></span>
+      </div>
+    </div>
   </div>
   <div class="fullscreen-modal-footer">
     <button class="btn btn-green" style="flex:1" onclick="saveRecords()">💾 Uložit rekordy</button>
@@ -2773,11 +2805,11 @@ function membershipBadgesHtml(completedYears) {
    PROFILE
    ═══════════════════════════════════════════════════════════════════ */
 const RECORD_DISTS = [
-  { key:'1k',  label:'1 km' },
-  { key:'5k',  label:'5 km' },
-  { key:'10k', label:'10 km' },
-  { key:'hm',  label:'Půlmaraton' },
-  { key:'m',   label:'Maraton' },
+  { key:'1k',  label:'1 km',       km: 1        },
+  { key:'5k',  label:'5 km',       km: 5        },
+  { key:'10k', label:'10 km',      km: 10       },
+  { key:'hm',  label:'Půlmaraton', km: 21.0975  },
+  { key:'m',   label:'Maraton',    km: 42.195   },
 ];
 
 function renderProfile() {
@@ -3017,10 +3049,35 @@ function handlePhotoUpload(e) {
 }
 
 /* ── Records ─────────────────────────────────────────────────────── */
+/* ── Pace calculation helpers ────────────────────────────────────── */
+/** Parse "mm:ss" or "h:mm:ss" → total seconds, or null on invalid input */
+function parseTimeToSec(str) {
+  if (!str) return null;
+  const parts = str.trim().split(':').map(Number);
+  if (parts.some(isNaN) || parts.length < 2 || parts.length > 3) return null;
+  if (parts.length === 2) return parts[0] * 60 + parts[1];          // mm:ss
+  return parts[0] * 3600 + parts[1] * 60 + parts[2];                // h:mm:ss
+}
+/** Format seconds-per-km as "m:ss /km" */
+function formatPace(secPerKm) {
+  const m = Math.floor(secPerKm / 60);
+  const s = Math.round(secPerKm % 60);
+  return `${m}:${String(s).padStart(2, '0')} /km`;
+}
+/** Called oninput on each record field – updates the pace hint span */
+function calcRecordPace(key, km) {
+  const totalSec = parseTimeToSec(document.getElementById('rec-' + key).value);
+  const el = document.getElementById('pace-' + key);
+  if (!el) return;
+  if (!totalSec || totalSec <= 0) { el.textContent = ''; return; }
+  el.textContent = formatPace(totalSec / km);
+}
+
 function openRecordsEdit() {
   const records = STATE.user.records || {};
   RECORD_DISTS.forEach(d => {
     document.getElementById('rec-' + d.key).value = records[d.key] || '';
+    calcRecordPace(d.key, d.km);   // zobraz pace hned při otevření
   });
   document.getElementById('records-modal').classList.add('open');
 }
