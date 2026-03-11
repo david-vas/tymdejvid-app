@@ -420,6 +420,18 @@
     .race-countdown { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 13px; padding: 3px 10px; border-radius: 20px; background: var(--green-light); color: var(--green); white-space: nowrap; }
     .race-countdown.urgent { background: #fef3c7; color: #92400e; }
     .race-section-label { font-size: 12px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: .5px; padding: 10px 0 4px; }
+    .pay-method-btn { background: var(--bg); border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; color: var(--text-main); font-family: inherit; }
+    .pay-method-btn.selected { border-color: var(--green); background: var(--green-light); color: var(--green-deep); }
+    .topup-pkg { background: var(--bg); border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 16px; text-align: center; cursor: pointer; transition: all .15s; }
+    .topup-pkg.selected { border-color: var(--green); background: var(--green-light); }
+    .topup-pkg-count { font-family: 'Baloo 2', sans-serif; font-size: 28px; font-weight: 800; color: var(--green); line-height: 1; }
+    .topup-pkg-label { font-size: 12px; color: var(--text-light); margin: 2px 0 6px; }
+    .topup-pkg-price { font-size: 14px; font-weight: 700; color: var(--text-main); }
+    .finance-month { background: white; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 12px; overflow: hidden; }
+    .finance-month-header { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .finance-month-title { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 15px; }
+    .finance-month-total { font-weight: 700; color: var(--green); font-size: 15px; }
+    .finance-month-body { padding: 0 16px 12px; border-top: 1px solid var(--border); }
     .profile-name { font-family: 'Baloo 2', sans-serif; font-size: 24px; font-weight: 800; }
     .profile-email { font-size: 13px; opacity: .8; margin-top: 2px; }
     .profile-since { font-size: 12px; opacity: .7; margin-top: 8px; }
@@ -449,12 +461,14 @@
 
     /* ── TOAST ───────────────────────────────────────── */
     #toast {
-      position: fixed; top: 64px; left: 50%; transform: translateX(-50%) translateY(-80px);
-      background: var(--blue-dark); color: white; padding: 10px 20px;
-      border-radius: 99px; font-size: 14px; font-weight: 600; z-index: 999;
-      transition: transform .3s; white-space: nowrap;
+      position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%) translateY(40px);
+      background: #1a1a2e; color: white; padding: 12px 22px;
+      border-radius: 99px; font-size: 14px; font-weight: 600; z-index: 9999;
+      transition: transform .25s ease, opacity .25s ease; white-space: nowrap;
+      opacity: 0; pointer-events: none; max-width: 90vw; text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,.25);
     }
-    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
     #toast.success { background: var(--green); }
     #toast.error { background: #ef4444; }
 
@@ -680,6 +694,16 @@
         </div>
       </div>
 
+      <!-- Credits widget -->
+      <div id="dash-credits-card" style="border-radius:var(--radius);padding:16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;opacity:.8">🎟 Předplacené tréninky</div>
+          <div style="font-size:32px;font-weight:800;font-family:'Baloo 2',sans-serif;line-height:1" id="dash-credits-count">0</div>
+          <div style="font-size:12px;margin-top:2px;opacity:.75" id="dash-credits-label">tréninků zbývá</div>
+        </div>
+        <button onclick="showCreditTopup()" style="background:rgba(255,255,255,0.2);color:inherit;border:1.5px solid rgba(255,255,255,0.35);border-radius:var(--radius-sm);padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Baloo 2',sans-serif">+ Dobít</button>
+      </div>
+
       <!-- Upcoming trainings -->
       <div class="section-title">
         Nadcházející tréninky
@@ -809,6 +833,7 @@
       <div class="admin-tab active" id="admin-tab-att" onclick="switchAdminTab('attendance')">📋 Docházka</div>
       <div class="admin-tab"        id="admin-tab-trn" onclick="switchAdminTab('trainings')">📅 Tréninky</div>
       <div class="admin-tab"        id="admin-tab-run" onclick="switchAdminTab('runners')">👤 Běžci</div>
+      <div class="admin-tab"        id="admin-tab-fin" onclick="switchAdminTab('finance')">💰 Finance</div>
     </div>
 
     <!-- Panel: Docházka -->
@@ -827,6 +852,11 @@
     <div id="admin-panel-runners" class="screen-content hidden" style="padding-top:12px">
       <button class="btn btn-green btn-full" onclick="openRunnerModal('new')" style="margin-bottom:16px">＋ Nový běžec</button>
       <div id="admin-runners-list"></div>
+    </div>
+
+    <!-- Panel: Finance -->
+    <div id="admin-panel-finance" class="screen-content hidden" style="padding-top:12px">
+      <div id="admin-finance-content"></div>
     </div>
   </div>
 
@@ -1033,13 +1063,70 @@
       <input type="number" id="credit-amount-inp" placeholder="600" min="0" />
     </div>
     <div class="form-group">
-      <label>Poznámka</label>
-      <input type="text" id="credit-note-inp" placeholder="Hotovost / převod / datum…" />
+      <label>Způsob platby</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="pay-method-btn" id="pm-cash"    onclick="selectPayMethod('cash')"   >💵 Hotovost</button>
+        <button type="button" class="pay-method-btn" id="pm-transfer" onclick="selectPayMethod('transfer')">🏦 Převod</button>
+        <button type="button" class="pay-method-btn" id="pm-qr"      onclick="selectPayMethod('qr')"     >📱 QR kód</button>
+        <button type="button" class="pay-method-btn" id="pm-invoice" onclick="selectPayMethod('invoice')">🧾 Faktura</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Poznámka <span style="font-weight:400;font-size:11px;color:var(--text-light)">(volitelné)</span></label>
+      <input type="text" id="credit-note-inp" placeholder="Datum, variabilní symbol…" />
     </div>
     <div id="credit-history-list"></div>
   </div>
   <div class="fullscreen-modal-footer">
     <button class="btn btn-green" style="flex:1" onclick="saveCreditAdd()">💳 Přidat kredity</button>
+  </div>
+</div>
+
+<!-- ════ CREDIT TOPUP MODAL ══════════════════════════════════════════ -->
+<div class="fullscreen-modal" id="credit-topup-modal">
+  <div class="fullscreen-modal-header">
+    <button class="back-btn" style="padding:0;color:var(--text-light)" onclick="closeCreditTopup()">✕</button>
+    <div class="fullscreen-modal-title">Dobít kredity</div>
+    <div></div>
+  </div>
+  <div class="fullscreen-modal-body">
+    <p style="font-size:13px;color:var(--text-light);margin-bottom:20px">Vyber balíček, zaplať přes QR kód a trenér ti kredity aktivuje.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px" id="topup-packages">
+      <div class="topup-pkg" onclick="selectTopupPkg(this,4,600)" data-sessions="4" data-amount="600">
+        <div class="topup-pkg-count">4</div>
+        <div class="topup-pkg-label">tréninky</div>
+        <div class="topup-pkg-price">600 Kč</div>
+      </div>
+      <div class="topup-pkg" onclick="selectTopupPkg(this,8,1200)" data-sessions="8" data-amount="1200">
+        <div class="topup-pkg-count">8</div>
+        <div class="topup-pkg-label">tréninků</div>
+        <div class="topup-pkg-price">1 200 Kč</div>
+      </div>
+      <div class="topup-pkg" onclick="selectTopupPkg(this,12,1800)" data-sessions="12" data-amount="1800">
+        <div class="topup-pkg-count">12</div>
+        <div class="topup-pkg-label">tréninků</div>
+        <div class="topup-pkg-price">1 800 Kč</div>
+      </div>
+      <div class="topup-pkg" onclick="selectTopupPkg(this,0,0)" data-sessions="0" data-amount="0" id="topup-custom-card">
+        <div class="topup-pkg-count" style="font-size:20px">✏️</div>
+        <div class="topup-pkg-label">vlastní</div>
+        <div class="topup-pkg-price">—</div>
+      </div>
+    </div>
+    <div id="topup-custom-row" style="display:none;margin-bottom:16px">
+      <div style="display:flex;gap:10px">
+        <div class="form-group" style="flex:1;margin:0"><label>Tréninků</label><input type="number" id="topup-custom-sessions" placeholder="6" min="1" oninput="updateTopupCustom()" /></div>
+        <div class="form-group" style="flex:1;margin:0"><label>Kč</label><input type="number" id="topup-custom-amount" placeholder="900" min="0" oninput="updateTopupCustom()" /></div>
+      </div>
+    </div>
+    <div id="topup-qr-section" style="display:none;text-align:center">
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px" id="topup-qr-summary"></div>
+      <div id="topup-qr-code" style="display:inline-block;padding:12px;background:white;border-radius:12px;border:1px solid var(--border)"></div>
+      <div style="font-size:12px;color:var(--text-light);margin-top:12px">VS: <strong id="topup-qr-vs"></strong></div>
+      <div style="margin-top:16px;padding:12px;background:var(--green-light);border-radius:var(--radius-sm);font-size:13px;color:var(--green);font-weight:600">
+        ✅ Po zaplacení trenér aktivuje kredity
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1377,11 +1464,14 @@ function switchAdminTab(tab) {
   document.getElementById('admin-panel-attendance').classList.toggle('hidden', tab !== 'attendance');
   document.getElementById('admin-panel-trainings').classList.toggle('hidden',  tab !== 'trainings');
   document.getElementById('admin-panel-runners').classList.toggle('hidden',    tab !== 'runners');
+  document.getElementById('admin-panel-finance').classList.toggle('hidden',    tab !== 'finance');
   document.getElementById('admin-tab-att').classList.toggle('active', tab === 'attendance');
   document.getElementById('admin-tab-trn').classList.toggle('active', tab === 'trainings');
   document.getElementById('admin-tab-run').classList.toggle('active', tab === 'runners');
+  document.getElementById('admin-tab-fin').classList.toggle('active', tab === 'finance');
   if (tab === 'trainings') renderAdminTrainings();
   if (tab === 'runners')   renderAdminRunners();
+  if (tab === 'finance')   renderAdminFinance();
 }
 
 /* ── Training list (admin) ───────────────────────────────────────── */
@@ -1644,6 +1734,7 @@ function renderDashboard() {
   document.getElementById('dash-total').textContent  = stats.total;
   document.getElementById('dash-pct').textContent    = stats.pct + '%';
   document.getElementById('dash-streak').textContent = stats.streak;
+  renderDashCredits();
 
   // Upcoming trainings (next 4)
   const upcoming = STATE.trainings
@@ -2290,32 +2381,68 @@ function deleteRunnerFromDetail() {
 
 /* ── CREDIT SYSTEM ───────────────────────────────────────────────── */
 let creditTargetUserId = null;
+let selectedPayMethod = null;
+
+function selectPayMethod(method) {
+  selectedPayMethod = method;
+  document.querySelectorAll('.pay-method-btn').forEach(b => b.classList.remove('selected'));
+  const map = { cash: 'pm-cash', transfer: 'pm-transfer', qr: 'pm-qr', invoice: 'pm-invoice' };
+  if (map[method]) document.getElementById(map[method]).classList.add('selected');
+}
+
+function creditSessionsLabel(n) {
+  if (n === 1) return 'trénink';
+  if (n <= 4)  return 'tréninky';
+  return 'tréninků';
+}
+
+const PAY_METHOD_LABELS = { cash: '💵 Hotovost', transfer: '🏦 Převod', qr: '📱 QR kód', invoice: '🧾 Faktura' };
 
 function openCreditModal(userId) {
   creditTargetUserId = userId;
+  selectedPayMethod = null;
   const user = getAllUsers().find(u => u.id === userId);
   if (!user) return;
   document.getElementById('credit-modal-runner').textContent = '🏃 ' + user.name;
   document.getElementById('credit-sessions-inp').value = '';
   document.getElementById('credit-amount-inp').value = '';
   document.getElementById('credit-note-inp').value = '';
+  document.querySelectorAll('.pay-method-btn').forEach(b => b.classList.remove('selected'));
   // Show credit history
-  const hist = (user.creditHistory || []).slice().reverse();
+  const hist = (user.creditHistory || []);
   document.getElementById('credit-history-list').innerHTML = hist.length ? `
-    <div style="font-size:13px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px">Historie plateb</div>
-    ${hist.map(h => `
+    <div style="font-size:13px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin:20px 0 8px">Historie plateb</div>
+    ${hist.slice().reverse().map((h, ri) => {
+      const realIdx = hist.length - 1 - ri;
+      const methodLabel = h.paymentMethod ? ' · ' + (PAY_METHOD_LABELS[h.paymentMethod] || h.paymentMethod) : '';
+      return `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
         <div>
-          <div style="font-size:14px;font-weight:600;color:var(--green)">+${h.sessions} tréninků${h.amount ? ' · ' + h.amount + ' Kč' : ''}</div>
+          <div style="font-size:14px;font-weight:600;color:var(--green)">+${h.sessions} ${creditSessionsLabel(h.sessions)}${h.amount ? ' · ' + h.amount + ' Kč' : ''}${methodLabel}</div>
           <div style="font-size:12px;color:var(--text-light)">${fmtDate(h.date)}${h.note ? ' · ' + h.note : ''}</div>
         </div>
-      </div>`).join('')}` : '';
+        <button onclick="deleteCreditEntry('${userId}',${realIdx})" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px 8px;color:var(--text-light)" title="Smazat záznam">🗑</button>
+      </div>`; }).join('')}` : '';
   document.getElementById('credit-add-modal').classList.add('open');
 }
 
 function closeCreditModal() {
   document.getElementById('credit-add-modal').classList.remove('open');
   creditTargetUserId = null;
+}
+
+function deleteCreditEntry(userId, histIndex) {
+  const users = getAllUsers();
+  const uIdx = users.findIndex(u => u.id === userId);
+  if (uIdx === -1) return;
+  const entry = users[uIdx].creditHistory[histIndex];
+  if (!entry) return;
+  // Refund the credits that were added by this entry
+  users[uIdx].credits = Math.max(0, (users[uIdx].credits || 0) - entry.sessions);
+  users[uIdx].creditHistory.splice(histIndex, 1);
+  saveUsers(users);
+  showToast(`Záznam smazán · odebráno ${entry.sessions} ${creditSessionsLabel(entry.sessions)}`, '');
+  openCreditModal(userId); // refresh modal
 }
 
 function saveCreditAdd() {
@@ -2332,13 +2459,172 @@ function saveCreditAdd() {
     date: new Date().toISOString().slice(0,10),
     sessions,
     amount: amount ? parseInt(amount) : null,
+    paymentMethod: selectedPayMethod || null,
     note
   });
   saveUsers(users);
-  showToast(`✅ Přidáno ${sessions} tréninků · celkem ${users[idx].credits}`, 'success');
+  const total = users[idx].credits;
+  showToast(`✅ Přidán${sessions===1?'':'o'} ${sessions} ${creditSessionsLabel(sessions)} · celkem ${total}`, 'success');
   const targetId = creditTargetUserId;
   closeCreditModal();
   openRunnerDetail(targetId);
+}
+
+/* ── DASHBOARD CREDIT WIDGET ─────────────────────────────────────── */
+function renderDashCredits() {
+  const card = document.getElementById('dash-credits-card');
+  if (!card || !STATE.user) return;
+  const credits = STATE.user.credits || 0;
+  if (credits > 0) {
+    card.style.background = 'linear-gradient(135deg, var(--green-deep) 0%, var(--green) 100%)';
+    card.style.color = 'white';
+    document.getElementById('dash-credits-count').textContent = credits;
+    document.getElementById('dash-credits-label').textContent =
+      credits === 1 ? 'trénink zbývá' : credits <= 4 ? 'tréninky zbývají' : 'tréninků zbývá';
+  } else {
+    card.style.background = 'var(--bg)';
+    card.style.color = 'var(--text-main)';
+    document.getElementById('dash-credits-count').textContent = '0';
+    document.getElementById('dash-credits-label').textContent = 'žádné kredity';
+  }
+  card.style.display = 'flex';
+}
+
+/* ── CREDIT TOPUP MODAL ──────────────────────────────────────────── */
+let topupSessions = 0, topupAmount = 0, topupQrInstance = null;
+
+function showCreditTopup() {
+  topupSessions = 0; topupAmount = 0;
+  document.querySelectorAll('.topup-pkg').forEach(el => el.classList.remove('selected'));
+  document.getElementById('topup-custom-row').style.display = 'none';
+  document.getElementById('topup-qr-section').style.display = 'none';
+  document.getElementById('credit-topup-modal').classList.add('open');
+}
+
+function closeCreditTopup() {
+  document.getElementById('credit-topup-modal').classList.remove('open');
+}
+
+function selectTopupPkg(el, sessions, amount) {
+  document.querySelectorAll('.topup-pkg').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+  const isCustom = sessions === 0;
+  document.getElementById('topup-custom-row').style.display = isCustom ? 'block' : 'none';
+  if (!isCustom) {
+    topupSessions = sessions; topupAmount = amount;
+    generateTopupQR();
+  } else {
+    document.getElementById('topup-qr-section').style.display = 'none';
+  }
+}
+
+function updateTopupCustom() {
+  topupSessions = parseInt(document.getElementById('topup-custom-sessions').value) || 0;
+  topupAmount   = parseInt(document.getElementById('topup-custom-amount').value)   || 0;
+  if (topupSessions > 0 && topupAmount > 0) generateTopupQR();
+  else document.getElementById('topup-qr-section').style.display = 'none';
+}
+
+function generateTopupQR() {
+  const vs = STATE.user ? STATE.user.id.replace(/\D/g,'').slice(0,10).padStart(4,'0') : '0000';
+  document.getElementById('topup-qr-summary').textContent =
+    `${topupSessions} tréninků · ${topupAmount} Kč`;
+  document.getElementById('topup-qr-vs').textContent = vs;
+  const qrDiv = document.getElementById('topup-qr-code');
+  qrDiv.innerHTML = '';
+  const qrData = `SPD*1.0*ACC:${CFG.bankAccount}*AM:${topupAmount}.00*CC:CZK*MSG:TYMDEJVID*X-VS:${vs}`;
+  try {
+    topupQrInstance = new QRCode(qrDiv, {
+      text: qrData, width: 180, height: 180,
+      colorDark: '#0f172a', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  } catch(e) {
+    qrDiv.innerHTML = `<div style="padding:16px;font-size:13px;color:var(--text-light)">QR kód (doplň číslo účtu)</div>`;
+  }
+  document.getElementById('topup-qr-section').style.display = 'block';
+}
+
+/* ── FINANCE (monthly summaries) ─────────────────────────────────── */
+function renderAdminFinance() {
+  const el = document.getElementById('admin-finance-content');
+  if (!el) return;
+  const users = getAllUsers().filter(u => u.role !== 'coach');
+
+  // Collect all credit history entries
+  const allEntries = [];
+  users.forEach(u => {
+    (u.creditHistory || []).forEach(h => {
+      allEntries.push({ ...h, userName: u.name, userId: u.id });
+    });
+  });
+
+  if (!allEntries.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">💰</div><p>Zatím žádné platby</p></div>';
+    return;
+  }
+
+  // Group by month
+  const byMonth = {};
+  allEntries.forEach(e => {
+    const month = (e.date || '').slice(0, 7); // "2026-03"
+    if (!byMonth[month]) byMonth[month] = [];
+    byMonth[month].push(e);
+  });
+
+  const months = Object.keys(byMonth).sort().reverse();
+  const totalAll = allEntries.reduce((s, e) => s + (e.amount || 0), 0);
+  const totalSessions = allEntries.reduce((s, e) => s + (e.sessions || 0), 0);
+
+  // Active credits per runner
+  const activeCredits = users.filter(u => (u.credits || 0) > 0)
+    .map(u => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:14px">${u.name}</span>
+      <span style="font-size:14px;font-weight:700;color:var(--green)">🎟 ${u.credits} zbývá</span>
+    </div>`).join('');
+
+  el.innerHTML = `
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <div style="flex:1;background:var(--green-light);border-radius:var(--radius-sm);padding:14px;text-align:center">
+        <div style="font-size:24px;font-weight:800;font-family:'Baloo 2',sans-serif;color:var(--green)">${totalAll.toLocaleString('cs-CZ')} Kč</div>
+        <div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px">Celkem vybráno</div>
+      </div>
+      <div style="flex:1;background:var(--bg);border-radius:var(--radius-sm);padding:14px;text-align:center">
+        <div style="font-size:24px;font-weight:800;font-family:'Baloo 2',sans-serif;color:var(--green)">${totalSessions}</div>
+        <div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px">Předplacených</div>
+      </div>
+    </div>
+    ${activeCredits ? `<div style="font-size:13px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Aktivní kredity</div>
+    <div class="card" style="margin-bottom:16px"><div class="card-body" style="padding:8px 16px">${activeCredits}</div></div>` : ''}
+    <div style="font-size:13px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Měsíční přehled</div>
+    ${months.map(m => {
+      const entries = byMonth[m];
+      const monthTotal = entries.reduce((s, e) => s + (e.amount || 0), 0);
+      const monthSessions = entries.reduce((s, e) => s + (e.sessions || 0), 0);
+      const [y, mo] = m.split('-');
+      const monthName = new Date(+y, +mo-1, 1).toLocaleString('cs-CZ', { month: 'long', year: 'numeric' });
+      const rows = entries.map(e => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-size:13px;font-weight:600">${e.userName}</div>
+            <div style="font-size:11px;color:var(--text-light)">${fmtDate(e.date)}${e.paymentMethod ? ' · ' + (PAY_METHOD_LABELS[e.paymentMethod]||e.paymentMethod) : ''}${e.note ? ' · ' + e.note : ''}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:13px;font-weight:700;color:var(--green)">${e.amount ? e.amount + ' Kč' : '—'}</div>
+            <div style="font-size:11px;color:var(--text-light)">${e.sessions} ${creditSessionsLabel(e.sessions)}</div>
+          </div>
+        </div>`).join('');
+      return `<div class="finance-month">
+        <div class="finance-month-header">
+          <div class="finance-month-title">${monthName}</div>
+          <div style="text-align:right">
+            <div class="finance-month-total">${monthTotal ? monthTotal.toLocaleString('cs-CZ') + ' Kč' : '—'}</div>
+            <div style="font-size:11px;color:var(--text-light)">${monthSessions} tréninků</div>
+          </div>
+        </div>
+        <div class="finance-month-body">${rows}</div>
+      </div>`;
+    }).join('')}`;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
