@@ -556,6 +556,26 @@
     .admin-tab.active { color: var(--green); border-bottom-color: var(--green); }
 
     /* ── ADMIN LIST ITEMS ────────────────────────────── */
+    .swipe-row { position: relative; overflow: hidden; border-bottom: 1px solid var(--border); }
+    .swipe-row:last-child { border-bottom: none; }
+    .swipe-content {
+      display: flex; align-items: center; gap: 12px; padding: 12px 0;
+      background: white; transition: transform .2s ease;
+      will-change: transform; position: relative; z-index: 1;
+    }
+    .swipe-actions {
+      position: absolute; right: 0; top: 0; bottom: 0;
+      display: flex; align-items: stretch; z-index: 0;
+    }
+    .swipe-action-btn {
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 2px; width: 76px;
+      font-size: 11px; font-weight: 700; border: none; cursor: pointer;
+      padding: 0; color: white;
+    }
+    .swipe-action-btn .swipe-btn-icon { font-size: 18px; }
+    .swipe-action-edit   { background: var(--green); }
+    .swipe-action-delete { background: #ef4444; }
     .admin-list-item {
       display: flex; align-items: center; gap: 12px; padding: 12px 0;
       border-bottom: 1px solid var(--border);
@@ -1703,17 +1723,25 @@ function renderAdminTrainings() {
   }
   el.innerHTML = `<div class="card"><div class="card-body" style="padding:8px 16px">
     ${all.map(t => `
-      <div class="admin-list-item">
-        <div style="font-size:22px;width:30px;flex-shrink:0;text-align:center">${t.icon || '📅'}</div>
-        <div class="admin-list-info">
-          <div class="admin-list-name">${t.cancelled ? '🔴 ' : ''}${t.type}</div>
-          <div class="admin-list-sub">${fmtDate(t.date)} · ${t.time} · ${t.registered.length}/${t.capacity} míst</div>
+      <div class="swipe-row" id="srow-${t.id}">
+        <div class="swipe-actions">
+          <button class="swipe-action-btn swipe-action-edit"   onclick="swipeClose('${t.id}');openTrainingModal('${t.id}')">
+            <span class="swipe-btn-icon">✎</span>Upravit
+          </button>
+          <button class="swipe-action-btn swipe-action-delete" onclick="quickDeleteTraining('${t.id}')">
+            <span class="swipe-btn-icon">🗑</span>Smazat
+          </button>
         </div>
-        <div class="admin-list-actions">
-          <button class="btn btn-outline btn-sm" onclick="openTrainingModal('${t.id}')">✎ Upravit</button>
+        <div class="swipe-content" id="sc-${t.id}" onclick="openTrainingModal('${t.id}')">
+          <div style="font-size:22px;width:30px;flex-shrink:0;text-align:center">${t.icon || '📅'}</div>
+          <div class="admin-list-info">
+            <div class="admin-list-name">${t.cancelled ? '🔴 ' : ''}${t.type}</div>
+            <div class="admin-list-sub">${fmtDate(t.date)} · ${t.time} · ${t.registered.length}/${t.capacity} míst</div>
+          </div>
         </div>
       </div>`).join('')}
   </div></div>`;
+  initSwipeRows();
 }
 
 /* ── Training modal open / close / save / delete ─────────────────── */
@@ -1820,6 +1848,86 @@ function deleteCurrentTraining() {
   closeTrainingModal();
   renderAdminTrainings();
   showToast('Trénink smazán', '');
+}
+
+/* ── Quick delete (from swipe) ──────────────────────────────────── */
+function quickDeleteTraining(id) {
+  if (!confirm('Opravdu smazat tento trénink?')) { swipeClose(id); return; }
+  if (!_trainingDeletes.includes(id)) _trainingDeletes.push(id);
+  _trainingExtras = _trainingExtras.filter(t => t.id !== id);
+  saveTrainingData();
+  STATE.trainings = buildTrainings();
+  renderAdminTrainings();
+  showToast('Trénink smazán', '');
+}
+
+/* ── Swipe-to-reveal (iOS style) ────────────────────────────────── */
+let _swipeOpenId = null;
+
+function swipeClose(id) {
+  const sc = document.getElementById('sc-' + id);
+  if (sc) { sc.style.transition = 'transform .2s ease'; sc.style.transform = 'translateX(0)'; }
+  if (_swipeOpenId === id) _swipeOpenId = null;
+}
+
+function initSwipeRows() {
+  const SNAP = 152;   // total width of 2 action buttons
+  const THRESHOLD = 60;
+
+  document.querySelectorAll('.swipe-row').forEach(row => {
+    const id = row.id.replace('srow-', '');
+    const sc = row.querySelector('.swipe-content');
+    let startX = 0, startY = 0, curX = 0, dragging = false, didSwipe = false;
+
+    sc.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      curX   = _swipeOpenId === id ? -SNAP : 0;
+      dragging = true; didSwipe = false;
+      sc.style.transition = 'none';
+    }, { passive: true });
+
+    sc.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      if (!didSwipe && Math.abs(dy) > Math.abs(dx)) { dragging = false; return; }
+      didSwipe = true;
+      const newX = Math.max(-SNAP, Math.min(0, curX + dx));
+      sc.style.transform = `translateX(${newX}px)`;
+
+      // close other open rows
+      if (dx < -10 && _swipeOpenId && _swipeOpenId !== id) swipeClose(_swipeOpenId);
+    }, { passive: true });
+
+    sc.addEventListener('touchend', e => {
+      if (!dragging) return;
+      dragging = false;
+      const dx = e.changedTouches[0].clientX - startX;
+      sc.style.transition = 'transform .2s ease';
+      if (dx < -THRESHOLD || (_swipeOpenId === id && dx > -10)) {
+        if (dx < -THRESHOLD) {
+          sc.style.transform = `translateX(-${SNAP}px)`;
+          _swipeOpenId = id;
+        } else {
+          sc.style.transform = 'translateX(0)';
+          _swipeOpenId = null;
+        }
+      } else if (dx > THRESHOLD && _swipeOpenId === id) {
+        sc.style.transform = 'translateX(0)';
+        _swipeOpenId = null;
+      } else {
+        sc.style.transform = curX === 0 ? 'translateX(0)' : `translateX(-${SNAP}px)`;
+      }
+    }, { passive: true });
+  });
+
+  // tap outside → close open row
+  document.addEventListener('touchstart', e => {
+    if (!_swipeOpenId) return;
+    const row = document.getElementById('srow-' + _swipeOpenId);
+    if (row && !row.contains(e.target)) swipeClose(_swipeOpenId);
+  }, { passive: true });
 }
 
 /* ═══════════════════════════════════════════════════════════════════
