@@ -746,9 +746,15 @@
 
     <!-- Register form -->
     <div id="form-register" class="hidden">
-      <div class="form-group">
-        <label>Jméno a příjmení</label>
-        <input type="text" id="reg-name" placeholder="Jan Novák" />
+      <div class="form-row">
+        <div class="form-group">
+          <label>Jméno</label>
+          <input type="text" id="reg-firstname" placeholder="Jan" autocomplete="given-name" />
+        </div>
+        <div class="form-group">
+          <label>Příjmení</label>
+          <input type="text" id="reg-lastname" placeholder="Novák" autocomplete="family-name" />
+        </div>
       </div>
       <div class="form-group">
         <label>Pohlaví</label>
@@ -759,15 +765,19 @@
       </div>
       <div class="form-group">
         <label>E-mail</label>
-        <input type="email" id="reg-email" placeholder="jan@example.com" />
+        <input type="email" id="reg-email" placeholder="jan@example.com" autocomplete="email" />
       </div>
       <div class="form-group">
         <label>Telefonní číslo <span style="color:var(--text-light);font-weight:400">(volitelné)</span></label>
-        <input type="tel" id="reg-phone" placeholder="+420 777 123 456" />
+        <input type="tel" id="reg-phone" placeholder="+420 777 123 456" autocomplete="tel" />
+      </div>
+      <div class="form-group">
+        <label>Člen #TYMDEJVID od</label>
+        <input type="date" id="reg-joindate" />
       </div>
       <div class="form-group">
         <label>Heslo</label>
-        <input type="password" id="reg-pass" placeholder="min. 6 znaků" />
+        <input type="password" id="reg-pass" placeholder="min. 6 znaků" autocomplete="new-password" />
       </div>
       <p class="form-error" id="reg-error"></p>
       <button class="btn btn-green btn-full" style="margin-top:8px" onclick="doRegister()">Vytvořit účet</button>
@@ -1194,9 +1204,15 @@
     <button class="btn btn-green btn-sm" onclick="saveProfileEdit()">Uložit</button>
   </div>
   <div class="fullscreen-modal-body">
-    <div class="form-group">
-      <label>Jméno a příjmení</label>
-      <input type="text" id="pe-name" placeholder="Jan Novák" />
+    <div class="form-row">
+      <div class="form-group">
+        <label>Jméno</label>
+        <input type="text" id="pe-firstname" placeholder="Jan" autocomplete="given-name" />
+      </div>
+      <div class="form-group">
+        <label>Příjmení</label>
+        <input type="text" id="pe-lastname" placeholder="Novák" autocomplete="family-name" />
+      </div>
     </div>
     <div class="form-group">
       <label>Pohlaví</label>
@@ -1208,6 +1224,10 @@
     <div class="form-group">
       <label>Telefonní číslo <span style="color:var(--text-light);font-weight:400">(volitelné)</span></label>
       <input type="tel" id="pe-phone" placeholder="+420 777 123 456" />
+    </div>
+    <div class="form-group">
+      <label>Člen #TYMDEJVID od</label>
+      <input type="date" id="pe-joindate" />
     </div>
     <p class="form-error" id="pe-error"></p>
     <div style="background:var(--bg);border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;color:var(--text-light);margin-top:8px">
@@ -1683,6 +1703,11 @@ function switchTab(tab) {
   document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
   document.getElementById('form-register').classList.toggle('hidden', tab !== 'register');
   document.getElementById('form-forgot').classList.add('hidden');
+  // Pre-fill joindate with today when switching to register tab
+  if (tab === 'register') {
+    const jd = document.getElementById('reg-joindate');
+    if (jd && !jd.value) jd.value = new Date().toISOString().slice(0, 10);
+  }
 }
 
 /* ── Forgot password ─────────────────────────────────────────────── */
@@ -1745,13 +1770,19 @@ async function doLogin() {
 }
 
 async function doRegister() {
-  const name  = document.getElementById('reg-name').value.trim();
-  const email = document.getElementById('reg-email').value.trim().toLowerCase();
-  const pass  = document.getElementById('reg-pass').value;
-  const errEl = document.getElementById('reg-error');
+  const firstName = document.getElementById('reg-firstname').value.trim();
+  const lastName  = document.getElementById('reg-lastname').value.trim();
+  const email     = document.getElementById('reg-email').value.trim().toLowerCase();
+  const pass      = document.getElementById('reg-pass').value;
+  const joinDate  = document.getElementById('reg-joindate').value;
+  const errEl     = document.getElementById('reg-error');
   errEl.classList.remove('show');
-  if (!name || !email || pass.length < 6) {
-    errEl.textContent = 'Vyplň všechna pole (heslo min. 6 znaků).';
+  if (!firstName || !lastName || !email || pass.length < 6) {
+    errEl.textContent = 'Vyplň jméno, příjmení, e-mail a heslo (min. 6 znaků).';
+    errEl.classList.add('show'); return;
+  }
+  if (!joinDate) {
+    errEl.textContent = 'Vyplň datum členství v #TYMDEJVID.';
     errEl.classList.add('show'); return;
   }
   try {
@@ -1759,11 +1790,14 @@ async function doRegister() {
     const phone  = document.getElementById('reg-phone').value.trim();
     const cred   = await auth.createUserWithEmailAndPassword(email, pass);
     const newUser = {
-      name, email,
-      role: 'pending',
+      firstName,
+      lastName,
+      name:           firstName + ' ' + lastName,
+      email,
+      role:           'pending',
       gender,
       phone:          phone || '',
-      joinDate:       new Date().toISOString().slice(0,10),
+      joinDate,
       credits:        0,
       creditHistory:  [],
       creditUsed:     {},
@@ -2913,9 +2947,15 @@ function triggerPhotoUpload() {
 
 /* ── Editace profilu běžce ───────────────────────────────────────── */
 function openProfileEdit() {
-  document.getElementById('pe-name').value   = STATE.user.name   || '';
-  document.getElementById('pe-gender').value = STATE.user.gender || 'male';
-  document.getElementById('pe-phone').value  = STATE.user.phone  || '';
+  const u = STATE.user;
+  // Populate first/last name - fall back to splitting the full name string for existing users
+  const firstName = u.firstName || (u.name ? u.name.split(' ')[0] : '');
+  const lastName  = u.lastName  || (u.name ? u.name.split(' ').slice(1).join(' ') : '');
+  document.getElementById('pe-firstname').value = firstName;
+  document.getElementById('pe-lastname').value  = lastName;
+  document.getElementById('pe-gender').value    = u.gender   || 'male';
+  document.getElementById('pe-phone').value     = u.phone    || '';
+  document.getElementById('pe-joindate').value  = u.joinDate || '';
   document.getElementById('pe-error').classList.remove('show');
   document.getElementById('profile-edit-modal').classList.add('open');
 }
@@ -2925,23 +2965,35 @@ function closeProfileEdit() {
 }
 
 function saveProfileEdit() {
-  const name   = document.getElementById('pe-name').value.trim();
-  const gender = document.getElementById('pe-gender').value;
-  const errEl  = document.getElementById('pe-error');
-  if (!name) { errEl.textContent = 'Zadej jméno.'; errEl.classList.add('show'); return; }
+  const firstName = document.getElementById('pe-firstname').value.trim();
+  const lastName  = document.getElementById('pe-lastname').value.trim();
+  const gender    = document.getElementById('pe-gender').value;
+  const joinDate  = document.getElementById('pe-joindate').value;
+  const errEl     = document.getElementById('pe-error');
+  if (!firstName || !lastName) {
+    errEl.textContent = 'Zadej jméno a příjmení.';
+    errEl.classList.add('show'); return;
+  }
   errEl.classList.remove('show');
 
+  const name  = firstName + ' ' + lastName;
   const phone = document.getElementById('pe-phone').value.trim();
 
   // Aktualizuj STATE
-  STATE.user.name   = name;
-  STATE.user.gender = gender;
-  STATE.user.phone  = phone;
+  STATE.user.firstName = firstName;
+  STATE.user.lastName  = lastName;
+  STATE.user.name      = name;
+  STATE.user.gender    = gender;
+  STATE.user.phone     = phone;
+  if (joinDate) STATE.user.joinDate = joinDate;
 
   // Aktualizuj cache a Firestore
   const users = getAllUsers();
   const idx   = users.findIndex(u => u.id === STATE.user.id);
-  if (idx !== -1) { users[idx].name = name; users[idx].gender = gender; users[idx].phone = phone; }
+  if (idx !== -1) {
+    Object.assign(users[idx], { firstName, lastName, name, gender, phone });
+    if (joinDate) users[idx].joinDate = joinDate;
+  }
   saveUsers(users);
 
   closeProfileEdit();
