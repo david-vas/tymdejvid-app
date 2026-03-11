@@ -1135,14 +1135,45 @@
         </div>
       </div>
     </div>
-    <div id="topup-qr-section" style="display:none;text-align:center">
-      <div style="font-size:14px;font-weight:600;margin-bottom:12px" id="topup-qr-summary"></div>
-      <div id="topup-qr-code" style="display:inline-block;padding:12px;background:white;border-radius:12px;border:1px solid var(--border)"></div>
-      <div style="font-size:12px;color:var(--text-light);margin-top:12px">VS: <strong id="topup-qr-vs"></strong></div>
-      <div style="margin-top:16px;padding:12px;background:var(--green-light);border-radius:var(--radius-sm);font-size:13px;color:var(--green);font-weight:600">
+    <div id="topup-qr-section" style="display:none">
+      <!-- K zaplacení -->
+      <div style="background:var(--green-light);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px;text-align:center">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin-bottom:6px">K zaplacení</div>
+        <div style="font-size:44px;font-weight:800;font-family:'Baloo 2',sans-serif;color:var(--green);line-height:1" id="topup-qr-amount-big">—</div>
+        <div style="font-size:13px;color:var(--green);font-weight:600;margin-top:6px" id="topup-qr-summary"></div>
+      </div>
+      <!-- QR kód -->
+      <div style="text-align:center;margin-bottom:16px">
+        <div id="topup-qr-code" style="display:inline-block;padding:16px;background:white;border-radius:16px;border:1px solid var(--border);box-shadow:0 2px 16px rgba(0,0,0,.08)"></div>
+      </div>
+      <!-- Platební údaje -->
+      <div style="background:var(--bg);border-radius:var(--radius-sm);padding:4px 16px;margin-bottom:12px;border:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:13px;border-bottom:1px solid var(--border)">
+          <span style="color:var(--text-light)">Účet</span>
+          <span style="font-weight:700">123-350890277/0100</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:13px;border-bottom:1px solid var(--border)">
+          <span style="color:var(--text-light)">Variabilní symbol</span>
+          <span style="font-weight:700" id="topup-qr-vs">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:13px">
+          <span style="color:var(--text-light)">Zpráva</span>
+          <span style="font-weight:700">TYMDEJVID</span>
+        </div>
+      </div>
+      <!-- Kopírovat -->
+      <button onclick="copyPaymentDetails()" style="width:100%;padding:13px;border-radius:var(--radius-sm);border:2px solid var(--green);background:white;color:var(--green);font-size:14px;font-weight:700;cursor:pointer;font-family:'Baloo 2',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px">
+        📋 Kopírovat platební údaje
+      </button>
+      <!-- Info -->
+      <div style="padding:12px 16px;background:var(--green-light);border-radius:var(--radius-sm);font-size:13px;color:var(--green);font-weight:600;text-align:center">
         ✅ Po zaplacení trenér aktivuje kredity
       </div>
     </div>
+  </div>
+  <!-- Footer — zobrazí se až po výběru balíčku -->
+  <div class="fullscreen-modal-footer" id="topup-footer" style="display:none">
+    <button class="btn btn-green" style="flex:1;font-size:16px" onclick="confirmTopupPaid()">✅ Zaplatil/a jsem</button>
   </div>
 </div>
 
@@ -2551,6 +2582,7 @@ function showCreditTopup() {
   document.querySelectorAll('.topup-pkg').forEach(el => el.classList.remove('selected'));
   document.getElementById('topup-custom-row').style.display = 'none';
   document.getElementById('topup-qr-section').style.display = 'none';
+  document.getElementById('topup-footer').style.display = 'none';
   document.getElementById('credit-topup-modal').classList.add('open');
 }
 
@@ -2590,15 +2622,16 @@ function stepCustomSessions(delta) {
 
 function generateTopupQR() {
   const vs = STATE.user ? STATE.user.id.replace(/\D/g,'').slice(0,10).padStart(4,'0') : '0000';
-  document.getElementById('topup-qr-summary').textContent =
-    `${topupSessions} tréninků · ${topupAmount} Kč`;
+  const sessLabel = creditSessionsLabel(topupSessions);
+  document.getElementById('topup-qr-amount-big').textContent = topupAmount.toLocaleString('cs-CZ') + ' Kč';
+  document.getElementById('topup-qr-summary').textContent = `${topupSessions} ${sessLabel}`;
   document.getElementById('topup-qr-vs').textContent = vs;
   const qrDiv = document.getElementById('topup-qr-code');
   qrDiv.innerHTML = '';
   const qrData = `SPD*1.0*ACC:${CFG.bankAccount}*AM:${topupAmount}.00*CC:CZK*MSG:TYMDEJVID*X-VS:${vs}`;
   try {
     topupQrInstance = new QRCode(qrDiv, {
-      text: qrData, width: 180, height: 180,
+      text: qrData, width: 190, height: 190,
       colorDark: '#0f172a', colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M
     });
@@ -2606,6 +2639,27 @@ function generateTopupQR() {
     qrDiv.innerHTML = `<div style="padding:16px;font-size:13px;color:var(--text-light)">QR kód (doplň číslo účtu)</div>`;
   }
   document.getElementById('topup-qr-section').style.display = 'block';
+  document.getElementById('topup-footer').style.display = 'flex';
+}
+
+function copyPaymentDetails() {
+  const vs = document.getElementById('topup-qr-vs').textContent;
+  const amount = topupAmount;
+  const text = `Platba #TYMDEJVID\nČíslo účtu: 123-350890277/0100\nČástka: ${amount} Kč\nVariabilní symbol: ${vs}\nZpráva: TYMDEJVID`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('📋 Platební údaje zkopírovány', 'success'));
+  } else {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('📋 Platební údaje zkopírovány', 'success');
+  }
+}
+
+function confirmTopupPaid() {
+  closeCreditTopup();
+  showToast('🙏 Děkujeme! Trenér brzy aktivuje kredity.', 'success');
 }
 
 /* ── FINANCE (monthly summaries) ─────────────────────────────────── */
