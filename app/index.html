@@ -2344,18 +2344,18 @@ function membershipDurationText(joinDate) {
   return `${years} ${years === 1 ? 'rok' : years <= 4 ? 'roky' : 'let'}`;
 }
 
-/** HTML pro odznak jednoho roku členství */
-function yearBadgeHtml(y) {
-  const label = `${y} ${y === 1 ? 'rok' : y <= 4 ? 'roky' : 'let'}`;
-  const cfgs  = [
-    null,
-    { e: '🏅', bg: '#fde8cc', c: '#7c3908' },  // 1 – bronz
-    { e: '🥈', bg: '#e8eaed', c: '#374151' },  // 2 – stříbro
-    { e: '🥇', bg: '#fef3c7', c: '#92400e' },  // 3 – zlato
-    { e: '💎', bg: '#ede9fe', c: '#5b21b6' },  // 4 – diamant
+/** HTML pro milníkové odznaky členství (1 rok / 5 let / 10 let) */
+function membershipBadgesHtml(completedYears) {
+  if (completedYears < 1) return '';
+  const milestones = [
+    { min: 1,  e: '🏅', label: '1 rok',  bg: '#fde8cc', c: '#7c3908' },
+    { min: 5,  e: '💎', label: '5 let',  bg: '#ede9fe', c: '#5b21b6' },
+    { min: 10, e: '👑', label: '10 let', bg: '#fef9c3', c: '#78350f' },
   ];
-  const cfg = cfgs[y] || { e: '👑', bg: '#fef9c3', c: '#78350f' };  // 5+ – koruna
-  return `<span class="membership-badge" style="background:${cfg.bg};color:${cfg.c}">${cfg.e} ${label}</span>`;
+  return milestones
+    .filter(m => completedYears >= m.min)
+    .map(m => `<span class="membership-badge" style="background:${m.bg};color:${m.c}">${m.e} ${m.label}</span>`)
+    .join('');
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2394,8 +2394,9 @@ function renderProfile() {
   // Odznaky členství – automaticky podle joinDate
   const _completedYears = membershipCompletedYears(STATE.user.joinDate);
   const yearsEl = document.getElementById('profile-years');
-  if (_completedYears > 0) {
-    yearsEl.innerHTML = Array.from({ length: _completedYears }, (_, i) => yearBadgeHtml(i + 1)).join('');
+  const _badgesHtml = membershipBadgesHtml(_completedYears);
+  if (_badgesHtml) {
+    yearsEl.innerHTML = _badgesHtml;
     yearsEl.style.display = 'flex';
   } else {
     yearsEl.innerHTML = '';
@@ -3319,7 +3320,7 @@ function renderAdminRunners() {
       <div class="admin-list-item">
         <div class="avatar-mini" style="width:34px;height:34px;font-size:13px;flex-shrink:0">${getInitials(u.name)}</div>
         <div class="admin-list-info">
-          <div class="admin-list-name">${u.name}${u.role==='coach' ? ' <span class="admin-badge">TRENÉR</span>' : ''}${membershipCompletedYears(u.joinDate) >= 1 ? ' ' + Array.from({length: membershipCompletedYears(u.joinDate)}, (_,i) => yearBadgeHtml(i+1)).join('') : ''}</div>
+          <div class="admin-list-name">${u.name}${u.role==='coach' ? ' <span class="admin-badge">TRENÉR</span>' : ''}${membershipBadgesHtml(membershipCompletedYears(u.joinDate)) ? ' ' + membershipBadgesHtml(membershipCompletedYears(u.joinDate)) : ''}</div>
           <div class="admin-list-sub">${u.email}${u.phone ? ' · 📞 ' + u.phone : ''}${u.joinDate ? ' · Člen od ' + fmtDate(u.joinDate) + (membershipDurationText(u.joinDate) ? ' (' + membershipDurationText(u.joinDate) + ')' : '') : ''}</div>
         </div>
         <div class="admin-list-actions">
@@ -3374,7 +3375,8 @@ function updateJoinDateInfo() {
   if (yrs === 0) {
     info.textContent = dur ? `Délka členství: ${dur}` : 'Čerstvý člen 🎉';
   } else {
-    info.innerHTML = `Délka: ${dur} · Odznaky: ` + Array.from({length: yrs}, (_,i) => yearBadgeHtml(i+1)).join(' ');
+    const _b = membershipBadgesHtml(yrs);
+    info.innerHTML = `Délka: ${dur}` + (_b ? ` · Odznaky: ${_b}` : '');
   }
 }
 
