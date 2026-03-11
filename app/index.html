@@ -586,6 +586,28 @@
     .admin-list-sub  { font-size: 12px; color: var(--text-light); margin-top: 2px; }
     .admin-list-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
+    /* ── ACCORDION (rollap) ──────────────────────────── */
+    .accordion { border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 10px; background: white; box-shadow: var(--shadow); }
+    .accordion-header {
+      display: flex; align-items: center; gap: 10px; padding: 14px 16px;
+      cursor: pointer; user-select: none; -webkit-user-select: none;
+      font-weight: 700; font-size: 14px; background: white;
+    }
+    .accordion-header:active { background: var(--bg); }
+    .accordion-icon { font-size: 18px; flex-shrink: 0; }
+    .accordion-title { flex: 1; }
+    .accordion-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: var(--green-light); color: var(--green); }
+    .accordion-arrow { font-size: 18px; color: var(--text-light); transition: transform .25s; flex-shrink: 0; }
+    .accordion.open .accordion-arrow { transform: rotate(90deg); }
+    .accordion-body { display: none; padding: 0 16px 14px; border-top: 1px solid var(--border); }
+    .accordion.open .accordion-body { display: block; }
+
+    /* contact row */
+    .contact-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .contact-row:last-child { border-bottom: none; }
+    .contact-row a { color: var(--green); text-decoration: none; font-size: 14px; font-weight: 600; }
+    .contact-row .contact-label { font-size: 12px; color: var(--text-light); }
+
     /* ── FULLSCREEN MODAL ────────────────────────────── */
     .fullscreen-modal {
       position: fixed; inset: 0; z-index: 300; background: var(--bg);
@@ -2887,20 +2909,19 @@ let viewingRunnerId = null;
 function openRunnerDetail(userId) {
   if (STATE.user?.role !== 'coach') return;
   viewingRunnerId = userId;
-  const user = getAllUsers().find(u => u.id === userId);
+  const cachedUser = (_usersCache || []).find(u => u.id === userId);
+  const user = cachedUser || getAllUsers().find(u => u.id === userId);
   if (!user) return;
 
   const today = new Date().toISOString().slice(0,10);
-  const pastTrainings = STATE.trainings.filter(t => !t.cancelled && t.date <= today).sort((a,b)=>a.date.localeCompare(b.date));
 
-  // Docházka ze Firestore cache (users/{uid}.attendance obsahuje vše)
-  const cachedUser = (_usersCache || []).find(u => u.id === userId) || user;
-  const merged = { ...(cachedUser.attendance || {}) };
-
+  /* ── Docházka ─────────────────────────────────────── */
+  const pastTrainings = STATE.trainings.filter(t => !t.cancelled && t.date <= today)
+                                       .sort((a,b) => a.date.localeCompare(b.date));
+  const merged      = { ...(user.attendance || {}) };
   const presentCount = Object.values(merged).filter(a => a.present).length;
-  const pct = pastTrainings.length ? Math.round(presentCount / pastTrainings.length * 100) : 0;
+  const pct         = pastTrainings.length ? Math.round(presentCount / pastTrainings.length * 100) : 0;
 
-  const roleBadge = user.role === 'coach' ? '<span class="admin-badge" style="background:#fef3c7;color:#92400e;margin-left:6px">TRENÉR</span>' : '';
   const attRows = pastTrainings.slice().reverse().map(t => {
     const present = merged[t.id]?.present;
     return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
@@ -2908,42 +2929,157 @@ function openRunnerDetail(userId) {
       <span style="font-size:14px;font-weight:600;color:var(--text-main)">${t.trainNum ? '#'+t.trainNum : ''}</span>
       <span style="font-size:14px;color:var(--text-main)">${fmtDate(t.date)}</span>
       <span style="font-size:13px;color:var(--text-light);flex:1;text-align:right;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.type||''}</span>
-      <button onclick="coachToggleAttFromDetail('${t.id}','${userId}')" style="background:${present?'var(--green)':'var(--bg)'};color:${present?'white':'var(--text-light)'};border:1.5px solid ${present?'var(--green)':'var(--border)'};border-radius:var(--radius-sm);padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">${present?'✓ Byl':'✗ Nebyl'}</button>
+      <button onclick="coachToggleAttFromDetail('${t.id}','${userId}')"
+        style="background:${present?'var(--green)':'var(--bg)'};color:${present?'white':'var(--text-light)'};border:1.5px solid ${present?'var(--green)':'var(--border)'};border-radius:var(--radius-sm);padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
+        ${present?'✓ Byl':'✗ Nebyl'}
+      </button>
     </div>`;
   }).join('');
 
+  /* ── Závody ───────────────────────────────────────── */
+  const races = (user.races || []).slice().sort((a,b) => a.date.localeCompare(b.date));
+  const upcomingRaces = races.filter(r => r.date >= today);
+  const pastRaces     = races.filter(r => r.date <  today).reverse();
+
+  function raceRow(r) {
+    const hasResult = r.time || r.place;
+    return `<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:15px">🏁</span>
+        <span style="font-weight:600;font-size:14px;flex:1">${r.name}</span>
+        ${r.place ? `<span style="font-size:12px;font-weight:700;color:var(--green)">${r.place}. místo</span>` : ''}
+      </div>
+      <div style="font-size:12px;color:var(--text-light);margin-top:3px;padding-left:23px">
+        ${fmtDate(r.date)}${r.distance ? ' · ' + r.distance : ''}${r.time ? ' · ⏱ ' + r.time : ''}${r.pace ? ' · ' + r.pace + '/km' : ''}
+      </div>
+    </div>`;
+  }
+
+  /* ── Osobní rekordy ───────────────────────────────── */
+  const records = user.records || {};
+  const recRows = RECORD_DISTS.map(d => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:13px;color:var(--text-light)">${d.label}</span>
+      <span style="font-size:14px;font-weight:700;color:${records[d.key]?'var(--text-main)':'var(--text-light)'}">${records[d.key] || '—'}</span>
+    </div>`).join('');
+
+  /* ── Badges ───────────────────────────────────────── */
+  const roleBadge   = user.role === 'coach' ? ' <span class="admin-badge" style="background:#fef3c7;color:#92400e">TRENÉR</span>' : '';
+  const yrs         = membershipCompletedYears(user.joinDate);
+  const badgesHtml  = membershipBadgesHtml(yrs);
+  const dur         = membershipDurationText(user.joinDate);
+
+  /* ── Kontakt ──────────────────────────────────────── */
+  const contactRows = `
+    <div class="contact-row">
+      <span style="font-size:18px">✉️</span>
+      <div>
+        <div class="contact-label">E-mail</div>
+        <a href="mailto:${user.email}">${user.email}</a>
+      </div>
+    </div>
+    ${user.phone ? `<div class="contact-row">
+      <span style="font-size:18px">📞</span>
+      <div>
+        <div class="contact-label">Telefon</div>
+        <a href="tel:${user.phone}">${user.phone}</a>
+      </div>
+    </div>` : ''}`;
+
+  /* ── Kredity widget ───────────────────────────────── */
+  const cr = user.credits || 0;
+  const crColor = cr > 0 ? 'var(--green)' : 'var(--text-light)';
+
   document.getElementById('rd-title').textContent = user.name;
   document.getElementById('rd-body').innerHTML = `
-    <div style="text-align:center;padding:16px 0 20px">
-      <div style="width:68px;height:68px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:var(--green);margin:0 auto 10px">${getInitials(user.name)}</div>
-      <p style="font-size:15px;font-weight:600;margin:0">${user.name}${roleBadge}</p>
-      <p style="font-size:13px;color:var(--text-light);margin:2px 0">${user.email}</p>
-      <p style="font-size:13px;color:var(--text-light);margin:2px 0">Člen od ${fmtDate(user.joinDate)}</p>
+
+    <!-- Hero -->
+    <div style="text-align:center;padding:20px 16px 16px">
+      <div style="width:72px;height:72px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:var(--green);margin:0 auto 10px">${getInitials(user.name)}</div>
+      <div style="font-size:16px;font-weight:700;margin:0">${user.name}${roleBadge}</div>
+      ${user.joinDate ? `<div style="font-size:12px;color:var(--text-light);margin-top:4px">Člen od ${fmtDate(user.joinDate)}${dur ? ' · ' + dur : ''}</div>` : ''}
+      ${badgesHtml ? `<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px">${badgesHtml}</div>` : ''}
     </div>
-    <div style="display:flex;gap:12px;margin-bottom:20px">
-      <div style="flex:1;background:var(--bg);border-radius:var(--radius-sm);padding:14px;text-align:center">
-        <div style="font-size:26px;font-weight:700;color:var(--green);font-family:'Baloo 2',sans-serif">${presentCount}</div>
-        <div style="font-size:12px;color:var(--text-light)">tréninků</div>
+
+    <!-- Stats -->
+    <div style="display:flex;gap:8px;margin:0 16px 16px">
+      <div style="flex:1;background:var(--bg);border-radius:var(--radius-sm);padding:12px;text-align:center">
+        <div style="font-size:24px;font-weight:800;color:var(--green);font-family:'Baloo 2',sans-serif">${presentCount}</div>
+        <div style="font-size:11px;color:var(--text-light)">tréninků</div>
       </div>
-      <div style="flex:1;background:var(--bg);border-radius:var(--radius-sm);padding:14px;text-align:center">
-        <div style="font-size:26px;font-weight:700;color:var(--green);font-family:'Baloo 2',sans-serif">${pct}%</div>
-        <div style="font-size:12px;color:var(--text-light)">docházka</div>
+      <div style="flex:1;background:var(--bg);border-radius:var(--radius-sm);padding:12px;text-align:center">
+        <div style="font-size:24px;font-weight:800;color:var(--green);font-family:'Baloo 2',sans-serif">${pct}%</div>
+        <div style="font-size:11px;color:var(--text-light)">docházka</div>
       </div>
-      <div style="flex:1;background:var(--bg);border-radius:var(--radius-sm);padding:14px;text-align:center">
-        <div style="font-size:26px;font-weight:700;color:var(--green);font-family:'Baloo 2',sans-serif">${pastTrainings.length}</div>
-        <div style="font-size:12px;color:var(--text-light)">celkem</div>
+      <div style="flex:1;background:${cr>0?'#f0fdf4':'var(--bg)'};border-radius:var(--radius-sm);padding:12px;text-align:center;border:${cr>0?'2px solid var(--green)':'2px solid transparent'}">
+        <div style="font-size:24px;font-weight:800;color:${crColor};font-family:'Baloo 2',sans-serif">${cr}</div>
+        <div style="font-size:11px;color:var(--text-light)">🎟 kredit</div>
       </div>
+      <button class="btn btn-green btn-sm" onclick="openCreditModal('${userId}')" style="align-self:center;flex-shrink:0;white-space:nowrap">+ kredit</button>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding:16px;background:${(user.credits||0)>0?'#f0fdf4':'var(--bg)'};border-radius:var(--radius-sm);border:2px solid ${(user.credits||0)>0?'var(--green)':'var(--border)'}">
-      <div>
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:4px">🎟 Předplacené tréninky</div>
-        <div style="font-size:36px;font-weight:800;font-family:'Baloo 2',sans-serif;color:${(user.credits||0)>0?'var(--green)':'var(--text-light)'};line-height:1">${user.credits||0}</div>
-        <div style="font-size:12px;color:var(--text-light);margin-top:2px">${(user.credits||0)===0?'žádné kredity':((user.credits||0)===1?'trénink zbývá':((user.credits||0)<=4?'tréninky zbývají':'tréninků zbývá'))}</div>
+
+    <div style="padding:0 16px 24px">
+
+      <!-- Kontakt -->
+      <div class="accordion open" id="acc-contact">
+        <div class="accordion-header" onclick="toggleAccordion('acc-contact')">
+          <span class="accordion-icon">📬</span>
+          <span class="accordion-title">Kontakt</span>
+          <span class="accordion-arrow">›</span>
+        </div>
+        <div class="accordion-body">${contactRows}</div>
       </div>
-      <button class="btn btn-green" onclick="openCreditModal('${user.id}')">+ Přidat</button>
+
+      <!-- Docházka -->
+      <div class="accordion open" id="acc-att">
+        <div class="accordion-header" onclick="toggleAccordion('acc-att')">
+          <span class="accordion-icon">📊</span>
+          <span class="accordion-title">Docházka</span>
+          <span class="accordion-badge">${presentCount} / ${pastTrainings.length}</span>
+          <span class="accordion-arrow">›</span>
+        </div>
+        <div class="accordion-body">
+          ${attRows || '<p style="color:var(--text-light);font-size:13px;margin:8px 0">Žádná data.</p>'}
+        </div>
+      </div>
+
+      <!-- Plánované závody -->
+      <div class="accordion${upcomingRaces.length ? ' open' : ''}" id="acc-upcoming">
+        <div class="accordion-header" onclick="toggleAccordion('acc-upcoming')">
+          <span class="accordion-icon">🗓</span>
+          <span class="accordion-title">Plánované závody</span>
+          ${upcomingRaces.length ? `<span class="accordion-badge">${upcomingRaces.length}</span>` : ''}
+          <span class="accordion-arrow">›</span>
+        </div>
+        <div class="accordion-body">
+          ${upcomingRaces.length ? upcomingRaces.map(raceRow).join('') : '<p style="color:var(--text-light);font-size:13px;margin:8px 0">Žádné plánované závody.</p>'}
+        </div>
+      </div>
+
+      <!-- Proběhlé závody -->
+      <div class="accordion" id="acc-past-races">
+        <div class="accordion-header" onclick="toggleAccordion('acc-past-races')">
+          <span class="accordion-icon">🏆</span>
+          <span class="accordion-title">Proběhlé závody</span>
+          ${pastRaces.length ? `<span class="accordion-badge">${pastRaces.length}</span>` : ''}
+          <span class="accordion-arrow">›</span>
+        </div>
+        <div class="accordion-body">
+          ${pastRaces.length ? pastRaces.map(raceRow).join('') : '<p style="color:var(--text-light);font-size:13px;margin:8px 0">Žádné záznamy.</p>'}
+        </div>
+      </div>
+
+      <!-- Osobní rekordy -->
+      <div class="accordion" id="acc-records">
+        <div class="accordion-header" onclick="toggleAccordion('acc-records')">
+          <span class="accordion-icon">🏅</span>
+          <span class="accordion-title">Osobní rekordy</span>
+          <span class="accordion-arrow">›</span>
+        </div>
+        <div class="accordion-body">${recRows}</div>
+      </div>
+
     </div>
-    <div style="font-size:13px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Historie docházky</div>
-    <div>${attRows || '<p style="color:var(--text-light);font-size:14px">Žádná data.</p>'}</div>
   `;
   document.getElementById('runner-detail-modal').classList.add('open');
 }
@@ -2951,6 +3087,10 @@ function openRunnerDetail(userId) {
 function closeRunnerDetail() {
   document.getElementById('runner-detail-modal').classList.remove('open');
   viewingRunnerId = null;
+}
+
+function toggleAccordion(id) {
+  document.getElementById(id)?.classList.toggle('open');
 }
 
 function openRunnerFromDetail() {
