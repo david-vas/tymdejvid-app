@@ -281,6 +281,11 @@
     .cal-dot.white { background: white; }
     .cal-dot.gray { background: var(--text-light); }
     .cal-dot.red { background: #ef4444; }
+    .cal-dot.race { background: #f59e0b; left: 50%; transform: translateX(-50%); }
+    .cal-dot.race-only { left: 50%; transform: translateX(-50%); background: #f59e0b; }
+    .cal-day.race-day { background: #fef3c7; color: var(--text); cursor: pointer; }
+    .cal-day.race-day:hover { background: #fde68a; transform: scale(1.05); }
+    .cal-dot.red { background: #ef4444; }
     .cal-day.cancelled-day { background: #fee2e2; color: #b91c1c; cursor: pointer; }
     .cal-day.cancelled-day:hover { background: #fecaca; transform: scale(1.05); }
     .cal-legend {
@@ -1251,6 +1256,7 @@
       <div class="form-group"><label>Tempo / km <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--text-light)">(auto)</span></label><input type="text" id="race-pace-inp" placeholder="4:59" /></div>
       <div class="form-group"></div>
     </div>
+    <div class="form-group"><label>Odkaz na závod <span style="color:var(--text-light);font-weight:400">(volitelné)</span></label><input type="url" id="race-url-inp" placeholder="https://..." /></div>
   </div>
   <div class="fullscreen-modal-footer">
     <button class="btn btn-green" style="flex:1" onclick="saveRace()">💾 Uložit závod</button>
@@ -1933,6 +1939,8 @@ function renderCalendar() {
   const todayStr = new Date().toISOString().slice(0,10);
   const trainingMap = {};
   STATE.trainings.forEach(t => { trainingMap[t.date] = t; });
+  const raceMap = {};
+  (STATE.user?.races || []).forEach(r => { if (r.date) raceMap[r.date] = r; });
 
   let html = ['Po','Út','St','Čt','Pá','So','Ne'].map(d => `<div class="cal-dow">${d}</div>`).join('');
 
@@ -1945,6 +1953,7 @@ function renderCalendar() {
     const isT  = iso === todayStr;
     const reg  = t && STATE.registrations[t.id];
     const past = iso < todayStr;
+    const race = raceMap[iso];
     let cls = '', dot = '';
     if (isT && t && t.cancelled) { cls = 'cancelled-day'; dot = `<span class="cal-dot red"></span>`; }
     else if (isT && t) { cls = 'today training'; dot = `<span class="cal-dot white"></span>`; }
@@ -1953,8 +1962,12 @@ function renderCalendar() {
     else if (t && reg && !past) { cls = 'registered'; dot = `<span class="cal-dot blue"></span>`; }
     else if (t && !past) { cls = 'training'; dot = `<span class="cal-dot green"></span>`; }
     else if (t && past)  { cls = 'past-training'; dot = `<span class="cal-dot gray"></span>`; }
-    const click = t ? `onclick="navigate('training','${t.id}')"` : '';
-    html += `<div class="cal-day ${cls}" ${click}>${day}${dot}</div>`;
+    else if (race) { cls = 'race-day'; }
+    // Přidej 🏁 tečku pro závod (vedle tréninkové tečky nebo samostatně)
+    const raceDot = race ? `<span class="cal-dot race" style="${dot ? 'left:calc(50% + 5px);' : ''}"></span>` : '';
+    const click = t ? `onclick="navigate('training','${t.id}')"` : race ? `onclick="navigate('profile')"` : '';
+    const title = race ? `title="🏁 ${race.name}"` : '';
+    html += `<div class="cal-day ${cls}" ${click} ${title}>${day}${dot}${raceDot}</div>`;
   }
 
   document.getElementById('cal-grid').innerHTML = html;
@@ -2276,7 +2289,7 @@ function renderProfile() {
         <div class="race-item" onclick="openRaceEdit('${r.id}')">
           <div class="race-icon-box">🏁</div>
           <div class="race-info">
-            <div class="race-name">${r.name}</div>
+            <div class="race-name">${r.url ? `<a href="${r.url}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline dotted">${r.name}</a>` : r.name}</div>
             <div class="race-meta">${r.date ? fmtDate(r.date) : ''}${r.distance ? ' · ' + r.distance : ''}</div>
           </div>
           <div class="race-result">
@@ -2396,6 +2409,7 @@ function openRaceEdit(id) {
     document.getElementById('race-time-inp').value  = '';
     document.getElementById('race-place-inp').value = '';
     document.getElementById('race-pace-inp').value  = '';
+    document.getElementById('race-url-inp').value   = '';
   } else {
     const race = (STATE.user.races || []).find(r => r.id === id);
     if (!race) return;
@@ -2405,6 +2419,7 @@ function openRaceEdit(id) {
     document.getElementById('race-time-inp').value  = race.time     || '';
     document.getElementById('race-place-inp').value = race.place    || '';
     document.getElementById('race-pace-inp').value  = race.pace     || '';
+    document.getElementById('race-url-inp').value   = race.url      || '';
   }
   document.getElementById('race-modal').classList.add('open');
 }
@@ -2442,6 +2457,7 @@ function saveRace() {
     time:     document.getElementById('race-time-inp').value.trim(),
     place:    document.getElementById('race-place-inp').value ? parseInt(document.getElementById('race-place-inp').value) : null,
     pace:     document.getElementById('race-pace-inp').value.trim(),
+    url:      document.getElementById('race-url-inp').value.trim(),
   };
   const races = STATE.user.races || [];
   if (editingRaceId) {
@@ -3412,6 +3428,17 @@ function seedAttendanceFromLeaderboard(user) {
    LOGIN SUCCESS  +  onAuthStateChanged
    ─ Firebase Auth spravuje session (žádný localStorage session key)
    ═══════════════════════════════════════════════════════════════════ */
+const MUNAKU_RACE = {
+  id:       'race-okolo-munaku-2026',
+  name:     'Okolo Muňáku',
+  date:     '2026-09-13',
+  distance: '10 km',
+  time:     '',
+  place:    null,
+  pace:     '',
+  url:      'https://davidvas.cz/okolo-munaku/',
+};
+
 async function loginSuccess(user) {
   STATE.user          = user;
   STATE.attendance    = user.attendance    || {};
@@ -3422,6 +3449,20 @@ async function loginSuccess(user) {
   if (!Object.keys(STATE.attendance).length) {
     seedAttendanceFromLeaderboard(user);
     saveState();
+  }
+
+  // Přidej výchozí závod "Okolo Muňáku" pokud ho uživatel ještě nemá
+  const existingRaces = user.races || [];
+  if (!existingRaces.find(r => r.id === MUNAKU_RACE.id)) {
+    user.races = [...existingRaces, MUNAKU_RACE];
+    STATE.user.races = user.races;
+    db.collection('users').doc(user.id)
+      .update({ races: user.races })
+      .catch(() => db.collection('users').doc(user.id).set({ races: user.races }, { merge: true }));
+    if (_usersCache) {
+      const idx = _usersCache.findIndex(u => u.id === user.id);
+      if (idx !== -1) _usersCache[idx].races = user.races;
+    }
   }
 
   document.getElementById('screen-login').style.display = 'none';
