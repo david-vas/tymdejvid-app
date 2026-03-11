@@ -1,0 +1,2664 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>David Vaš – Certifikovaný běžecký trenér</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:       #16a34a;
+      --green-dark:  #15803d;
+      --green-deep:  #166534;
+      --green-light: #dcfce7;
+      --blue-dark:   #0f172a;
+      --text:        #1a1a1a;
+      --text-light:  #64748b;
+      --bg:          #fff;
+      --bg-light:    #f8fafc;
+      --border:      #e2e8f0;
+      --radius:      8px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Open Sans', sans-serif;
+      font-size: 16px;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+
+    /* ── UTILITY ──────────────────────────────────────── */
+    .container { max-width: 1140px; margin: 0 auto; padding: 0 20px; }
+    .btn {
+      display: inline-block;
+      padding: 12px 28px;
+      border-radius: var(--radius);
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+    }
+    .btn-green {
+      background: var(--green);
+      color: #fff;
+    }
+    .btn-green:hover { background: var(--green-dark); transform: translateY(-1px); }
+    .btn-outline {
+      border: 2px solid var(--green);
+      color: var(--green);
+      background: transparent;
+    }
+    .btn-outline:hover { background: var(--green); color: #fff; }
+
+    section { padding: 96px 0; }
+
+    h1, h2, h3, h4 { font-family: 'Baloo 2', sans-serif; line-height: 1.25; }
+
+    /* ── COOKIE BANNER ───────────────────────────────── */
+    #cookie-banner {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #1a1a1a;
+      color: #ddd;
+      font-size: 14px;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      z-index: 9999;
+      flex-wrap: wrap;
+    }
+    #cookie-banner button {
+      background: var(--green);
+      color: #fff;
+      border: none;
+      padding: 8px 22px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    #cookie-banner button:hover { background: var(--green-dark); }
+
+    /* ── HEADER ──────────────────────────────────────── */
+    header {
+      position: sticky;
+      top: 0;
+      background: rgba(255,255,255,.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      z-index: 1000;
+    }
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 68px;
+    }
+    .logo {
+      font-family: 'Baloo 2', sans-serif;
+      font-size: 21px;
+      font-weight: 800;
+      color: var(--blue-dark);
+      letter-spacing: -.3px;
+    }
+    .logo span { color: var(--green); }
+
+    nav { display: flex; align-items: center; gap: 2px; }
+    nav a {
+      font-family: 'Baloo 2', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-light);
+      padding: 7px 11px;
+      border-radius: var(--radius);
+      transition: color .2s, background .2s;
+      position: relative;
+    }
+    nav a:hover { color: var(--blue-dark); background: var(--bg-light); }
+
+    /* dropdown */
+    .nav-item { position: relative; }
+    .nav-item:hover .dropdown { display: block; }
+    .dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: #fff;
+      border: 1px solid #e8e8e8;
+      border-radius: var(--radius);
+      min-width: 200px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.1);
+      padding: 8px 0;
+    }
+    .dropdown a {
+      display: block;
+      padding: 9px 18px;
+      font-size: 14px;
+      border-radius: 0;
+      white-space: nowrap;
+    }
+    .dropdown a:hover { background: #f0fdf0; color: var(--green); }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      padding: 6px;
+    }
+    .hamburger span {
+      width: 24px; height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+      transition: .3s;
+    }
+
+    /* ── HERO ────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      min-height: 560px;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      padding: 0;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to right, rgba(10,30,10,.75) 40%, rgba(10,30,10,.25) 100%),
+        url('https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=1400&q=80') center/cover no-repeat;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 620px;
+      padding: 80px 0;
+    }
+    .hero-tag {
+      display: inline-block;
+      background: var(--green);
+      color: #fff;
+      font-family: 'Baloo 2', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 4vw, 46px);
+      color: #fff;
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+    .hero p {
+      color: rgba(255,255,255,.85);
+      font-size: 17px;
+      line-height: 1.7;
+      margin-bottom: 32px;
+    }
+    .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
+
+    /* ── STATS BAR ───────────────────────────────────── */
+    .stats-bar {
+      background: var(--bg-light);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 36px 0;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      text-align: center;
+    }
+    .stat-num {
+      font-family: 'Baloo 2', sans-serif;
+      font-size: 38px;
+      font-weight: 800;
+      color: var(--blue-dark);
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-light);
+      margin-top: 5px;
+    }
+
+    /* ── SERVICES ────────────────────────────────────── */
+    .services { background: var(--bg-light); }
+    .section-header { text-align: center; margin-bottom: 56px; }
+    .section-header h2 {
+      font-size: clamp(26px, 3vw, 40px);
+      color: var(--blue-dark);
+      margin-bottom: 14px;
+      letter-spacing: -.5px;
+    }
+    .section-header p { color: var(--text-light); font-size: 16px; max-width: 520px; margin: 0 auto; line-height: 1.7; }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+    }
+    .service-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 32px 28px;
+      border: 1px solid var(--border);
+      transition: transform .2s, border-color .2s, box-shadow .2s;
+      display: flex;
+      flex-direction: column;
+    }
+    .service-card:hover { transform: translateY(-3px); border-color: var(--green); box-shadow: 0 8px 32px rgba(22,163,74,.1); }
+    .service-icon {
+      width: 48px; height: 48px;
+      background: var(--green-light);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 18px;
+    }
+    .service-card h3 {
+      font-size: 18px;
+      color: var(--blue-dark);
+      margin-bottom: 8px;
+    }
+    .service-card p { color: var(--text-light); font-size: 14px; line-height: 1.7; flex: 1; }
+    .service-card .price {
+      font-family: 'Baloo 2', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--green);
+      margin: 16px 0 14px;
+    }
+
+    /* ── CHALLENGE BANNER ────────────────────────────── */
+    .challenge-banner {
+      background: var(--blue-dark);
+      color: #fff;
+      padding: 56px 0;
+    }
+    .challenge-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+    .challenge-text h2 {
+      font-size: clamp(22px, 3vw, 32px);
+      margin-bottom: 8px;
+    }
+    .challenge-text p { font-size: 16px; color: rgba(255,255,255,.85); max-width: 500px; }
+    .btn-white {
+      background: #fff;
+      color: var(--green-deep);
+      font-weight: 700;
+    }
+    .btn-white:hover { background: #f0fdf0; }
+
+    /* ── BLOG POSTS ──────────────────────────────────── */
+    .posts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+    }
+    .post-card {
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 16px rgba(0,0,0,.06);
+      transition: transform .2s;
+    }
+    .post-card:hover { transform: translateY(-4px); }
+    .post-thumb {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    .post-body { padding: 22px 24px; }
+    .post-meta {
+      font-size: 12px;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 8px;
+    }
+    .post-body h3 {
+      font-size: 18px;
+      color: var(--blue-dark);
+      margin-bottom: 10px;
+      line-height: 1.3;
+    }
+    .post-body p { font-size: 14px; color: var(--text-light); line-height: 1.6; }
+    .post-link {
+      display: inline-block;
+      margin-top: 16px;
+      color: var(--green-deep);
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .post-link:hover { color: var(--green-dark); }
+
+    /* ── ABOUT ───────────────────────────────────────── */
+    .about { background: var(--bg-light); }
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+    .about-img {
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 16px 48px rgba(0,0,0,.12);
+    }
+    .about-img img { width: 100%; height: 440px; object-fit: cover; }
+    .about-text h2 {
+      font-size: clamp(24px, 3vw, 34px);
+      color: var(--blue-dark);
+      margin-bottom: 18px;
+    }
+    .about-text p {
+      color: var(--text-light);
+      font-size: 15.5px;
+      line-height: 1.75;
+      margin-bottom: 16px;
+    }
+    .cert-list { list-style: none; margin: 20px 0 28px; }
+    .cert-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      color: var(--text);
+      padding: 6px 0;
+    }
+    .cert-list li::before {
+      content: '';
+      width: 8px; height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── COMMUNITY ───────────────────────────────────── */
+    .community {
+      background: var(--bg-light);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .community-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .community-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px 24px;
+      border: 1px solid var(--border);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .community-card:hover { border-color: var(--green); box-shadow: 0 4px 20px rgba(22,163,74,.08); }
+    .community-card h3 {
+      font-size: 17px;
+      margin-bottom: 10px;
+      color: var(--blue-dark);
+    }
+    .community-card p { font-size: 14px; color: var(--text-light); line-height: 1.7; }
+
+    /* ── TESTIMONIALS ────────────────────────────────── */
+    .testimonials { background: #fff; }
+    .reviews-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .review-card {
+      background: var(--bg-light);
+      border-radius: 12px;
+      padding: 28px 26px;
+      border: 1px solid var(--border);
+    }
+    .stars { color: #f5a623; font-size: 18px; margin-bottom: 12px; }
+    .review-card p { color: var(--text-light); font-size: 15px; line-height: 1.7; font-style: italic; margin-bottom: 18px; }
+    .reviewer {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .reviewer-avatar {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .reviewer-name { font-weight: 700; font-size: 15px; }
+    .reviewer-detail { font-size: 12px; color: var(--text-light); }
+
+    /* ── CONTACT ─────────────────────────────────────── */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: start;
+    }
+    .contact-info h2 {
+      font-size: clamp(22px, 3vw, 32px);
+      color: var(--blue-dark);
+      margin-bottom: 16px;
+    }
+    .contact-info p { color: var(--text-light); font-size: 15.5px; line-height: 1.75; margin-bottom: 28px; }
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+      font-size: 15px;
+    }
+    .contact-icon {
+      width: 42px; height: 42px;
+      background: #f0fdf0;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .social-links { display: flex; gap: 12px; margin-top: 24px; }
+    .social-link {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: var(--bg-light);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      transition: background .2s;
+    }
+    .social-link:hover { background: var(--green); }
+
+    .contact-form { background: var(--bg-light); border-radius: 14px; padding: 36px; }
+    .contact-form h3 {
+      font-size: 20px;
+      color: var(--blue-dark);
+      margin-bottom: 24px;
+    }
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: var(--radius);
+      font-family: 'Open Sans', sans-serif;
+      font-size: 15px;
+      color: var(--text);
+      transition: border-color .2s;
+      background: #fff;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--green);
+    }
+    .form-group textarea { resize: vertical; min-height: 110px; }
+
+    /* ── FOOTER ──────────────────────────────────────── */
+    footer {
+      background: #111;
+      color: rgba(255,255,255,.7);
+      padding: 60px 0 30px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+    .footer-brand .logo { color: #fff; font-size: 20px; margin-bottom: 14px; display: block; }
+    .footer-brand p { font-size: 14px; line-height: 1.7; }
+    .footer-col h4 {
+      font-family: 'Baloo 2', sans-serif;
+      font-size: 16px;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    .footer-col ul { list-style: none; }
+    .footer-col ul li { margin-bottom: 9px; }
+    .footer-col ul li a {
+      font-size: 14px;
+      color: rgba(255,255,255,.6);
+      transition: color .2s;
+    }
+    .footer-col ul li a:hover { color: var(--green); }
+    .footer-bottom {
+      border-top: 1px solid rgba(255,255,255,.1);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 13px;
+    }
+    .footer-bottom a { color: rgba(255,255,255,.5); }
+    .footer-bottom a:hover { color: var(--green); }
+
+    /* ── MOBILE NAV ──────────────────────────────────── */
+    #mobile-menu {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #fff;
+      z-index: 998;
+      padding: 90px 24px 30px;
+      overflow-y: auto;
+    }
+    #mobile-menu.open { display: block; }
+    #mobile-menu a {
+      display: block;
+      font-family: 'Baloo 2', sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+    }
+    #mobile-menu a:hover { color: var(--green); }
+    #close-menu {
+      position: absolute;
+      top: 18px; right: 24px;
+      font-size: 28px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    /* ── RESPONSIVE ──────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .services-grid,
+      .posts-grid,
+      .community-grid,
+      .reviews-grid { grid-template-columns: repeat(2, 1fr); }
+      .about-grid { gap: 36px; }
+    }
+
+    @media (max-width: 768px) {
+      nav { display: none; }
+      .hamburger { display: flex; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .services-grid,
+      .posts-grid,
+      .community-grid,
+      .reviews-grid,
+      .about-grid,
+      .contact-grid,
+      .footer-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+      .challenge-inner { flex-direction: column; text-align: center; }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid,
+      .footer-grid { grid-template-columns: 1fr; }
+      .hero-btns { flex-direction: column; }
+    }
+
+    /* ── AUTH MODALS ──────────────────────────────────── */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:2000; align-items:center; justify-content:center; padding:20px; }
+    .modal-overlay.open { display:flex; }
+    .modal-box { background:#fff; border-radius:14px; width:100%; max-width:420px; padding:40px 36px; position:relative; box-shadow:0 24px 64px rgba(0,0,0,.2); animation:modalIn .25s ease; }
+    @keyframes modalIn { from{opacity:0;transform:translateY(-16px) scale(.97)} to{opacity:1;transform:none} }
+    .modal-close { position:absolute; top:14px; right:18px; background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-light); line-height:1; }
+    .modal-close:hover { color:var(--text); }
+    .modal-box h2 { font-size:24px; color:var(--blue-dark); margin-bottom:6px; }
+    .modal-sub { font-size:14px; color:var(--text-light); margin-bottom:26px; }
+    .modal-switch { text-align:center; font-size:14px; color:var(--text-light); margin-top:18px; }
+    .modal-switch span { color:var(--green-deep); font-weight:700; cursor:pointer; }
+    .modal-switch span:hover { text-decoration:underline; }
+    .modal-error { background:#fff0f0; border:1px solid #fcc; color:#c00; border-radius:var(--radius); padding:10px 14px; font-size:14px; margin-bottom:14px; display:none; }
+    .modal-error.show { display:block; }
+    .form-group.sm { margin-bottom:14px; }
+
+    /* ── NAV AUTH ELEMENTS ──────────────────────────────── */
+    .nav-login-btn { margin-left:8px; padding:8px 18px !important; background:var(--green) !important; color:#fff !important; border-radius:var(--radius) !important; }
+    .nav-login-btn:hover { background:var(--green-dark) !important; transform:none !important; }
+    .nav-user { display:none; align-items:center; gap:8px; margin-left:10px; position:relative; cursor:pointer; }
+    .nav-user.visible { display:flex; }
+    .nav-avatar { width:34px; height:34px; border-radius:50%; background:var(--green); color:#fff; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .nav-uname { font-family:'Baloo 2',sans-serif; font-weight:600; font-size:14px; }
+    .nav-user-dd { position:absolute; top:calc(100% + 6px); right:0; background:#fff; border:1px solid #e8e8e8; border-radius:var(--radius); min-width:190px; box-shadow:0 8px 24px rgba(0,0,0,.1); padding:8px 0; display:none; z-index:100; }
+    .nav-user-dd.open { display:block; }
+    .nav-user-dd a, .nav-user-dd button { display:block; width:100%; padding:9px 18px; font-size:14px; white-space:nowrap; text-align:left; background:none; border:none; cursor:pointer; font-family:'Open Sans',sans-serif; color:var(--text); }
+    .nav-user-dd a:hover, .nav-user-dd button:hover { background:#f0fdf0; color:var(--green); }
+    .nav-user-dd hr { border:none; border-top:1px solid #eee; margin:4px 0; }
+    .dd-logout:hover { background:#fff0f0 !important; color:#c00 !important; }
+
+    /* ── MEMBERSHIP PLANS ──────────────────────────────── */
+    .membership-section { background:var(--bg-light); }
+    .membership-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; align-items:start; }
+    .memb-card { background:#fff; border-radius:12px; padding:32px 26px; border:1px solid var(--border); text-align:center; position:relative; transition:border-color .2s, box-shadow .2s; }
+    .memb-card:hover { border-color:var(--green); box-shadow:0 8px 32px rgba(22,163,74,.1); }
+    .memb-card.featured { border:2px solid var(--green); box-shadow:0 8px 32px rgba(22,163,74,.12); }
+    .popular-badge { position:absolute; top:-13px; left:50%; transform:translateX(-50%); background:var(--green); color:#fff; font-size:11px; font-weight:700; padding:4px 14px; border-radius:12px; white-space:nowrap; font-family:'Baloo 2',sans-serif; }
+    .memb-card h3 { font-size:20px; color:var(--blue-dark); margin-bottom:4px; }
+    .memb-price { font-family:'Baloo 2',sans-serif; font-size:42px; font-weight:800; color:var(--blue-dark); line-height:1; margin:14px 0 4px; }
+    .memb-price small { font-size:15px; color:var(--text-light); font-weight:400; }
+    .memb-desc { font-size:14px; color:var(--text-light); margin-bottom:22px; }
+    .memb-features { list-style:none; text-align:left; margin-bottom:26px; }
+    .memb-features li { display:flex; align-items:flex-start; gap:8px; font-size:14px; color:var(--text); padding:5px 0; border-bottom:1px solid #f5f5f5; }
+    .memb-features li:last-child { border:none; }
+    .memb-features li::before { content:'✓'; color:var(--green); font-weight:700; flex-shrink:0; margin-top:1px; }
+    .memb-features li.no { color:var(--text-light); }
+    .memb-features li.no::before { content:'✗'; color:#ddd; }
+
+    /* ── DASHBOARD ──────────────────────────────────────── */
+    #dashboard { display:none; position:fixed; inset:0; background:#eef0f4; z-index:1500; overflow:hidden; }
+    #dashboard.open { display:flex; }
+
+    .dash-sidebar {
+      width:260px; flex-shrink:0; overflow-y:auto;
+      background: linear-gradient(180deg, #16335e 0%, #1f4978 60%, #1a4070 100%);
+      color:#fff;
+      display:flex; flex-direction:column;
+      box-shadow: 4px 0 24px rgba(0,0,0,.18);
+    }
+
+    /* logo */
+    .dash-logo-wrap {
+      padding: 26px 24px 20px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .dash-logo-wrap .logo { font-size:22px; }
+
+    /* user card */
+    .dash-user-info {
+      margin: 16px 14px;
+      padding: 16px;
+      background: rgba(255,255,255,.07);
+      border-radius: 12px;
+      display:flex; align-items:center; gap:12px;
+      border: 1px solid rgba(255,255,255,.1);
+    }
+    .dash-avatar {
+      width:46px; height:46px; border-radius:50%;
+      background: linear-gradient(135deg, var(--green), var(--green-deep));
+      display:flex; align-items:center; justify-content:center;
+      font-family:'Baloo 2',sans-serif; font-weight:800; font-size:19px;
+      flex-shrink:0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+    .dash-uname { font-family:'Baloo 2',sans-serif; font-weight:700; font-size:15px; line-height:1.2; }
+    .dash-tier-lbl {
+      display:inline-block; margin-top:5px;
+      font-size:10px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+      background: rgba(8,201,34,.2); color:var(--green);
+      border-radius:20px; padding:2px 8px;
+      border: 1px solid rgba(8,201,34,.3);
+    }
+
+    /* nav */
+    .dash-nav { padding:8px 12px; flex:1; display:flex; flex-direction:column; gap:2px; }
+    .dash-nav-section-label {
+      font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+      color:rgba(255,255,255,.3); padding:14px 10px 6px;
+    }
+    .dash-nav-item {
+      display:flex; align-items:center; gap:11px;
+      padding:11px 12px;
+      color:rgba(255,255,255,.6);
+      font-family:'Baloo 2',sans-serif; font-size:14px; font-weight:600;
+      cursor:pointer; border-radius:9px;
+      transition:all .18s;
+      white-space:nowrap;
+    }
+    .dash-nav-item:hover { color:#fff; background:rgba(255,255,255,.08); }
+    .dash-nav-item.active {
+      color:#fff;
+      background: rgba(8,201,34,.18);
+      box-shadow: inset 0 0 0 1px rgba(8,201,34,.25);
+    }
+    .dash-nav-icon {
+      width:32px; height:32px; border-radius:8px;
+      background: rgba(255,255,255,.07);
+      display:flex; align-items:center; justify-content:center;
+      font-size:15px; flex-shrink:0;
+      transition: background .18s;
+    }
+    .dash-nav-item:hover .dash-nav-icon { background:rgba(255,255,255,.12); }
+    .dash-nav-item.active .dash-nav-icon { background:rgba(8,201,34,.25); }
+
+    /* footer */
+    .dash-footer {
+      padding:14px 12px 18px;
+      border-top:1px solid rgba(255,255,255,.08);
+      display:flex; flex-direction:column; gap:8px;
+    }
+    .dash-btn {
+      width:100%; padding:10px 14px;
+      border-radius:9px; font-family:'Baloo 2',sans-serif;
+      font-weight:700; font-size:13px;
+      text-align:left; cursor:pointer; border:none;
+      display:flex; align-items:center; gap:10px;
+      transition: background .18s;
+    }
+    .dash-btn-back { background:rgba(255,255,255,.08); color:rgba(255,255,255,.8); }
+    .dash-btn-back:hover { background:rgba(255,255,255,.14); color:#fff; }
+    .dash-btn-logout { background:rgba(220,50,50,.15); color:#ff9999; }
+    .dash-btn-logout:hover { background:rgba(220,50,50,.28); color:#ffbbbb; }
+
+    .dash-main { flex:1; overflow-y:auto; padding:32px 36px; background:#eef0f4; }
+    .dash-tab { display:none; }
+    .dash-tab.active { display:block; }
+    .dash-title { font-size:26px; color:var(--blue-dark); margin-bottom:28px; font-weight:800; }
+
+    /* dashboard widgets */
+    .dstat-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+    .dstat { background:#fff; border-radius:10px; padding:20px 18px; box-shadow:0 2px 12px rgba(0,0,0,.05); }
+    .dstat .dl { font-size:11px; color:var(--text-light); text-transform:uppercase; letter-spacing:.5px; margin-bottom:5px; }
+    .dstat .dv { font-family:'Baloo 2',sans-serif; font-size:28px; font-weight:800; color:var(--blue-dark); line-height:1; }
+    .dstat .ds { font-size:12px; color:var(--green-deep); font-weight:600; margin-top:4px; }
+    .next-wo { background:linear-gradient(135deg,var(--blue-dark),#2a5fa8); color:#fff; border-radius:12px; padding:24px 26px; margin-bottom:24px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; }
+    .next-wo-label { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:rgba(255,255,255,.55); margin-bottom:6px; }
+    .next-wo-name { font-size:20px; font-weight:700; margin-bottom:4px; }
+    .next-wo-detail { font-size:13px; color:rgba(255,255,255,.7); }
+    .wo-pill { background:var(--green); color:#fff; padding:8px 20px; border-radius:20px; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:14px; white-space:nowrap; cursor:pointer; }
+    .week-chart { background:#fff; border-radius:10px; padding:22px; box-shadow:0 2px 12px rgba(0,0,0,.05); }
+    .week-chart h3 { font-size:15px; color:var(--blue-dark); margin-bottom:18px; }
+    .week-bars { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; }
+    .wbar-wrap { text-align:center; }
+    .wbar-name { font-size:11px; color:var(--text-light); text-transform:uppercase; margin-bottom:8px; }
+    .wbar-track { height:80px; background:#f0f0f0; border-radius:4px; display:flex; align-items:flex-end; overflow:hidden; }
+    .wbar-fill { width:100%; background:var(--green); border-radius:4px 4px 0 0; transition:height .7s ease; }
+    .wbar-fill.today { background:var(--green-deep); }
+    .wbar-fill.rest { background:#e8e8e8; height:4px !important; }
+    .wbar-km { font-size:11px; color:var(--text-light); margin-top:5px; font-weight:600; }
+
+    /* plan table */
+    .plan-table { width:100%; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.05); }
+    .plan-table th { background:var(--blue-dark); color:#fff; padding:13px 16px; text-align:left; font-family:'Baloo 2',sans-serif; font-size:13px; }
+    .plan-table td { padding:13px 16px; border-bottom:1px solid #f0f0f0; font-size:14px; vertical-align:middle; }
+    .plan-table tr:last-child td { border:none; }
+    .plan-table tr.today-row td { background:#f0fdf0; }
+    .plan-table tr:hover td { background:#fafcfa; }
+    .zt { display:inline-block; padding:3px 9px; border-radius:12px; font-size:12px; font-weight:700; }
+    .zt-z1{background:#e8f5e9;color:#2e7d32} .zt-z2{background:#e3f2fd;color:#1565c0} .zt-z3{background:#fff8e1;color:#e65100} .zt-z4{background:#fce4ec;color:#c62828} .zt-rest{background:#f5f5f5;color:#757575} .zt-sila{background:#ede7f6;color:#4527a0}
+    .plan-note { font-size:12px; color:var(--text-light); margin-top:3px; }
+    .plan-check { font-size:20px; cursor:pointer; user-select:none; }
+
+    /* videos */
+    .vid-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+    .vid-card { background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.05); cursor:pointer; transition:transform .2s; }
+    .vid-card:hover { transform:translateY(-3px); }
+    .vid-thumb { position:relative; height:140px; background:#1a1a2e; overflow:hidden; }
+    .vid-thumb img { width:100%; height:100%; object-fit:cover; opacity:.7; }
+    .vid-play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+    .vid-play-btn { width:44px; height:44px; background:rgba(255,255,255,.9); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; }
+    .vid-lock { position:absolute; inset:0; background:rgba(0,0,0,.65); display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; gap:6px; }
+    .vid-lock-icon { font-size:26px; }
+    .vid-lock-text { font-size:12px; font-weight:700; text-align:center; padding:0 12px; }
+    .vid-body { padding:12px 14px; }
+    .vid-body h4 { font-size:13px; color:var(--blue-dark); margin-bottom:3px; font-weight:700; }
+    .vid-body .vm { font-size:12px; color:var(--text-light); }
+    .tier-pill { display:inline-block; padding:2px 7px; border-radius:8px; font-size:10px; font-weight:700; margin-left:4px; }
+    .tier-pill.pro{background:#fff3cd;color:#856404} .tier-pill.aktivni{background:#cff4fc;color:#055160}
+
+    /* records */
+    .rec-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:24px; }
+    .rec-card { background:#fff; border-radius:10px; padding:20px 22px; box-shadow:0 2px 12px rgba(0,0,0,.05); display:flex; align-items:center; gap:16px; }
+    .rec-icon { font-size:30px; }
+    .rec-dist { font-size:12px; color:var(--text-light); text-transform:uppercase; letter-spacing:.5px; }
+    .rec-time { font-family:'Baloo 2',sans-serif; font-size:26px; font-weight:800; color:var(--blue-dark); line-height:1; }
+    .rec-date { font-size:12px; color:var(--text-light); margin-top:2px; }
+    .races-table { width:100%; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.05); }
+    .races-table th { background:var(--blue-dark); color:#fff; padding:12px 16px; text-align:left; font-family:'Baloo 2',sans-serif; font-size:13px; }
+    .races-table td { padding:12px 16px; border-bottom:1px solid #f0f0f0; font-size:14px; }
+    .races-table tr:last-child td { border:none; }
+
+    /* feed */
+    .feed-composer { background:#fff; border-radius:10px; padding:18px 20px; box-shadow:0 2px 12px rgba(0,0,0,.05); margin-bottom:20px; display:flex; gap:12px; align-items:flex-start; }
+    .feed-composer textarea { flex:1; border:1.5px solid #ddd; border-radius:var(--radius); padding:10px 12px; font-family:'Open Sans',sans-serif; font-size:14px; resize:none; height:66px; }
+    .feed-composer textarea:focus { outline:none; border-color:var(--green); }
+    .feed-list { display:flex; flex-direction:column; gap:12px; }
+    .feed-item { background:#fff; border-radius:10px; padding:16px 18px; box-shadow:0 2px 12px rgba(0,0,0,.05); display:flex; gap:12px; }
+    .feed-av { width:36px; height:36px; border-radius:50%; background:var(--blue-dark); display:flex; align-items:center; justify-content:center; color:#fff; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:14px; flex-shrink:0; }
+    .feed-author { font-weight:700; font-size:14px; color:var(--blue-dark); }
+    .feed-ts { font-size:12px; color:var(--text-light); margin-left:8px; }
+    .feed-text { font-size:14px; color:var(--text); line-height:1.6; margin-top:4px; }
+
+    /* profile */
+    .prof-grid { display:grid; grid-template-columns:260px 1fr; gap:20px; }
+    .prof-card { background:#fff; border-radius:10px; padding:26px 22px; box-shadow:0 2px 12px rgba(0,0,0,.05); text-align:center; }
+    .prof-big-av { width:76px; height:76px; border-radius:50%; background:var(--green); display:flex; align-items:center; justify-content:center; color:#fff; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:30px; margin:0 auto 14px; }
+    .prof-name { font-size:18px; color:var(--blue-dark); font-weight:700; }
+    .prof-email { font-size:13px; color:var(--text-light); margin-top:3px; }
+    .prof-tier-box { margin-top:18px; padding:14px; background:var(--bg-light); border-radius:8px; }
+    .prof-tier-lbl { font-size:11px; color:var(--text-light); text-transform:uppercase; letter-spacing:.5px; }
+    .prof-tier-val { font-family:'Baloo 2',sans-serif; font-size:20px; font-weight:800; color:var(--blue-dark); margin-top:3px; }
+    .prof-upgrade { display:block; margin-top:14px; background:var(--green); color:#fff; border:none; border-radius:var(--radius); padding:9px; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:13px; cursor:pointer; width:100%; }
+    .prof-upgrade:hover { background:var(--green-dark); }
+    .prof-form-card { background:#fff; border-radius:10px; padding:26px 24px; box-shadow:0 2px 12px rgba(0,0,0,.05); }
+    .prof-form-card h3 { font-size:18px; color:var(--blue-dark); margin-bottom:20px; }
+
+    /* upgrade tiers */
+    .upgrade-tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:20px 0; }
+    .upgrade-tier { border:2px solid #e8e8e8; border-radius:10px; padding:18px 14px; text-align:center; cursor:pointer; transition:all .2s; }
+    .upgrade-tier:hover, .upgrade-tier.selected { border-color:var(--green); background:#f0fdf0; }
+    .upgrade-tier h4 { font-size:15px; color:var(--blue-dark); margin-bottom:6px; }
+    .upgrade-tier .utp { font-family:'Baloo 2',sans-serif; font-size:22px; font-weight:800; color:var(--green-deep); }
+    .upgrade-tier .utp small { font-size:13px; color:var(--text-light); font-weight:400; }
+    .upgrade-tier ul { list-style:none; text-align:left; font-size:12px; color:var(--text-light); margin-top:10px; }
+    .upgrade-tier ul li::before { content:'✓ '; color:var(--green); font-weight:700; }
+
+    @media(max-width:900px) {
+      .dstat-row { grid-template-columns:repeat(2,1fr); }
+      .vid-grid { grid-template-columns:repeat(2,1fr); }
+      .prof-grid { grid-template-columns:1fr; }
+      .upgrade-tiers { grid-template-columns:1fr; }
+      .rec-grid { grid-template-columns:1fr; }
+      .membership-grid { grid-template-columns:1fr; }
+    }
+    @media(max-width:768px) {
+      .dash-sidebar { display:none; }
+      .dash-main { padding:16px; }
+    }
+
+    /* ── ADMIN PANEL ──────────────────────────────────── */
+    .admin-tabs { display:flex; gap:8px; margin-bottom:24px; flex-wrap:wrap; }
+    .atab { padding:9px 22px; border-radius:var(--radius); border:2px solid #e8e8e8; background:#fff; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:14px; cursor:pointer; transition:all .2s; }
+    .atab.active { border-color:var(--green); background:var(--green); color:#fff; }
+    .admin-section { display:none; }
+    .admin-section.active { display:block; }
+    .admin-card { background:#fff; border-radius:10px; padding:24px; box-shadow:0 2px 12px rgba(0,0,0,.05); }
+    .admin-card h4 { font-size:16px; color:var(--blue-dark); margin-bottom:18px; }
+    .admin-note { font-size:13px; color:#856404; background:#fff3cd; border-radius:8px; padding:12px 16px; border-left:3px solid #ffc107; margin-bottom:20px; }
+    .admin-item { background:#fff; border-radius:10px; padding:20px; box-shadow:0 2px 12px rgba(0,0,0,.05); margin-bottom:14px; border-left:4px solid var(--green); }
+    .admin-item-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+    .admin-item-title { font-family:'Baloo 2',sans-serif; font-weight:700; color:var(--blue-dark); font-size:15px; }
+    .admin-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .del-btn { background:#fff0f0; color:#c00; border:1px solid #fcc; border-radius:var(--radius); padding:6px 12px; cursor:pointer; font-size:13px; font-weight:700; flex-shrink:0; }
+    .del-btn:hover { background:#ffe0e0; }
+    .add-item-btn { background:#f0fdf0; color:var(--green-deep); border:2px dashed var(--green); border-radius:var(--radius); padding:12px; width:100%; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:14px; cursor:pointer; margin-top:4px; }
+    .add-item-btn:hover { background:#e0fde0; }
+    .save-section-btn { background:var(--green); color:#fff; border:none; border-radius:var(--radius); padding:11px 28px; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:15px; cursor:pointer; margin-top:16px; }
+    .save-section-btn:hover { background:var(--green-dark); }
+    .save-ok { font-size:13px; color:var(--green-deep); font-weight:700; margin-left:14px; display:none; }
+    .img-preview-thumb { width:100%; height:110px; object-fit:cover; border-radius:6px; margin-top:6px; }
+
+    /* ── E-SHOP ───────────────────────────────────── */
+    .eshop-section { background: var(--bg); }
+    .shop-filters { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:36px; }
+    .shop-filter-btn {
+      padding:8px 20px; border-radius:20px;
+      border:2px solid #e0e0e0; background:#fff;
+      font-family:'Baloo 2',sans-serif; font-weight:700; font-size:14px;
+      cursor:pointer; transition:all .2s; color:var(--text);
+    }
+    .shop-filter-btn:hover, .shop-filter-btn.active {
+      border-color:var(--green); background:var(--green); color:#fff;
+    }
+    .shop-grid {
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:24px;
+    }
+    .shop-card {
+      background:#fff;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 2px 16px rgba(0,0,0,.07);
+      transition:transform .2s, box-shadow .2s;
+      display:flex; flex-direction:column;
+    }
+    .shop-card:hover { transform:translateY(-5px); box-shadow:0 10px 32px rgba(0,0,0,.12); }
+    .shop-thumb {
+      position:relative;
+      height:180px; overflow:hidden;
+    }
+    .shop-thumb img { width:100%; height:100%; object-fit:cover; transition:transform .4s; }
+    .shop-card:hover .shop-thumb img { transform:scale(1.06); }
+    .shop-badge {
+      position:absolute; top:12px; left:12px;
+      background:var(--green); color:#fff;
+      font-size:11px; font-weight:700; font-family:'Baloo 2',sans-serif;
+      padding:3px 10px; border-radius:12px;
+    }
+    .shop-badge.new { background:var(--blue-dark); }
+    .shop-badge.sale { background:#e65100; }
+    .shop-body { padding:18px 18px 20px; flex:1; display:flex; flex-direction:column; }
+    .shop-category { font-size:11px; color:var(--green-deep); font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+    .shop-body h3 { font-size:16px; color:var(--blue-dark); margin-bottom:8px; line-height:1.3; }
+    .shop-body p { font-size:13px; color:var(--text-light); line-height:1.6; flex:1; }
+    .shop-footer { display:flex; align-items:center; justify-content:space-between; margin-top:16px; }
+    .shop-price { font-family:'Baloo 2',sans-serif; font-size:22px; font-weight:800; color:var(--blue-dark); }
+    .shop-price .old-price { font-size:13px; color:var(--text-light); text-decoration:line-through; font-weight:400; margin-left:6px; }
+    .shop-btn { background:var(--green); color:#fff; border:none; border-radius:var(--radius); padding:9px 16px; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:13px; cursor:pointer; white-space:nowrap; transition:background .2s; }
+    .shop-btn:hover { background:var(--green-dark); }
+
+    @media(max-width:1024px) { .shop-grid { grid-template-columns:repeat(2,1fr); } }
+    @media(max-width:640px)  { .shop-grid { grid-template-columns:1fr; } }
+
+    /* ── WEBINARS ─────────────────────────────────── */
+    .webinars-section { background:var(--bg-light); }
+    .webinars-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+    .webinar-card {
+      background:#fff; border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 2px 16px rgba(0,0,0,.07);
+      transition:transform .2s;
+      display:flex; flex-direction:column;
+    }
+    .webinar-card:hover { transform:translateY(-4px); }
+    .webinar-header {
+      background:linear-gradient(135deg, var(--blue-dark), #2a5fa8);
+      padding:28px 24px 20px;
+      position:relative;
+      color:#fff;
+    }
+    .webinar-type {
+      display:inline-block; font-size:11px; font-weight:700;
+      padding:3px 10px; border-radius:12px; margin-bottom:12px;
+      font-family:'Baloo 2',sans-serif; letter-spacing:.5px;
+    }
+    .wt-live { background:rgba(8,201,34,.25); color:#7eff9a; border:1px solid rgba(8,201,34,.35); }
+    .wt-recording { background:rgba(255,255,255,.15); color:rgba(255,255,255,.9); }
+    .wt-free { background:rgba(255,200,0,.25); color:#ffe45e; border:1px solid rgba(255,200,0,.3); }
+    .webinar-header h3 { font-size:18px; line-height:1.3; margin-bottom:6px; }
+    .webinar-date { font-size:13px; color:rgba(255,255,255,.7); }
+    .webinar-body { padding:20px 22px; flex:1; display:flex; flex-direction:column; }
+    .webinar-body p { font-size:14px; color:var(--text-light); line-height:1.65; flex:1; }
+    .webinar-tags { display:flex; flex-wrap:wrap; gap:6px; margin:14px 0; }
+    .webinar-tag { font-size:11px; color:var(--green-deep); background:#f0fdf0; border-radius:10px; padding:3px 10px; font-weight:600; }
+    .webinar-footer { display:flex; align-items:center; justify-content:space-between; margin-top:16px; }
+    .webinar-price { font-family:'Baloo 2',sans-serif; font-size:22px; font-weight:800; color:var(--blue-dark); }
+    .webinar-price.free { color:var(--green); }
+    .webinar-spots { font-size:12px; color:#e65100; font-weight:600; }
+
+    @media(max-width:900px) { .webinars-grid { grid-template-columns:1fr; } }
+    @media(max-width:1024px) { .webinars-grid { grid-template-columns:repeat(2,1fr); } }
+
+    /* ── RUNNING CAMPS ────────────────────────────── */
+    .camps-section { background:#fff; }
+    .camps-intro { text-align:center; max-width:700px; margin:0 auto 50px; }
+    .camps-intro p { font-size:16px; color:var(--text-light); line-height:1.75; }
+    .camps-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:32px; }
+    .camp-card {
+      border-radius:16px; overflow:hidden;
+      box-shadow:0 4px 24px rgba(0,0,0,.1);
+      transition:transform .2s, box-shadow .2s;
+    }
+    .camp-card:hover { transform:translateY(-5px); box-shadow:0 12px 40px rgba(0,0,0,.16); }
+    .camp-img { position:relative; height:260px; overflow:hidden; }
+    .camp-img img { width:100%; height:100%; object-fit:cover; transition:transform .4s; }
+    .camp-card:hover .camp-img img { transform:scale(1.06); }
+    .camp-overlay {
+      position:absolute; inset:0;
+      background:linear-gradient(to top, rgba(0,0,0,.7) 40%, transparent);
+      display:flex; align-items:flex-end; padding:22px 24px;
+    }
+    .camp-location {
+      display:flex; align-items:center; gap:8px;
+      color:#fff; font-family:'Baloo 2',sans-serif; font-size:15px; font-weight:700;
+    }
+    .camp-spots-badge {
+      position:absolute; top:16px; right:16px;
+      background:rgba(230,81,0,.9); color:#fff;
+      font-size:12px; font-weight:700; font-family:'Baloo 2',sans-serif;
+      padding:5px 12px; border-radius:20px;
+    }
+    .camp-body { background:#fff; padding:26px 26px 28px; }
+    .camp-dates { font-size:13px; color:var(--green-deep); font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:10px; }
+    .camp-body h3 { font-size:22px; color:var(--blue-dark); margin-bottom:12px; }
+    .camp-body p { font-size:15px; color:var(--text-light); line-height:1.7; margin-bottom:18px; }
+    .camp-includes { display:grid; grid-template-columns:1fr 1fr; gap:6px 16px; margin-bottom:22px; }
+    .camp-includes li { font-size:13px; color:var(--text); list-style:none; display:flex; align-items:center; gap:6px; }
+    .camp-includes li::before { content:'✓'; color:var(--green); font-weight:700; }
+    .camp-footer { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .camp-price { font-family:'Baloo 2',sans-serif; font-size:26px; font-weight:800; color:var(--blue-dark); }
+    .camp-price small { font-size:14px; color:var(--text-light); font-weight:400; }
+
+    @media(max-width:900px) { .camps-grid { grid-template-columns:1fr; } }
+
+    /* ── HOW IT WORKS ─────────────────────────────── */
+    .how-section { background:var(--bg-light); }
+    .steps-row { display:grid; grid-template-columns:repeat(4,1fr); gap:0; position:relative; }
+    .steps-row::before {
+      content:''; position:absolute;
+      top:32px; left:12%; right:12%;
+      height:2px; background:var(--green);
+      opacity:.25; z-index:0;
+    }
+    .step { text-align:center; padding:0 20px; position:relative; z-index:1; }
+    .step-num {
+      width:64px; height:64px; border-radius:50%;
+      background:var(--green); color:#fff;
+      font-family:'Baloo 2',sans-serif; font-weight:800; font-size:26px;
+      display:flex; align-items:center; justify-content:center;
+      margin:0 auto 20px;
+      box-shadow:0 4px 16px rgba(8,201,34,.35);
+    }
+    .step h3 { font-size:17px; color:var(--blue-dark); margin-bottom:8px; }
+    .step p { font-size:14px; color:var(--text-light); line-height:1.65; }
+    @media(max-width:900px) { .steps-row { grid-template-columns:repeat(2,1fr); gap:30px; } .steps-row::before { display:none; } }
+    @media(max-width:540px)  { .steps-row { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+
+<!-- Cookie Banner -->
+<div id="cookie-banner">
+  <span>Tento web používá cookies pro zlepšení vašeho zážitku. Pokračováním souhlasíte s jejich použitím.</span>
+  <button onclick="document.getElementById('cookie-banner').style.display='none'">Souhlasím</button>
+</div>
+
+<!-- Mobile Menu -->
+<div id="mobile-menu">
+  <button id="close-menu" onclick="toggleMenu()">&#10005;</button>
+  <a href="#uvod">Domov</a>
+  <a href="#sluzby">Tréninkové služby</a>
+  <a href="#eshop">E-shop</a>
+  <a href="#webinare">Webináře</a>
+  <a href="#kempy">Kempy 2026</a>
+  <a href="#o-mne">O mně</a>
+  <a href="#blog">Blog</a>
+  <a href="#komunita">#TYMDEJVID</a>
+  <a href="#clenky">Členství</a>
+  <a href="#recenze">Recenze</a>
+  <a href="#kontakt">Kontakt</a>
+  <a href="#" onclick="toggleMenu();openLogin();return false;" style="color:var(--green);font-weight:700">Přihlásit se / Registrace</a>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="container header-inner">
+    <a href="#uvod" class="logo">David<span>Vaš</span></a>
+
+    <nav>
+      <div class="nav-item">
+        <a href="#sluzby">Trénink &#9662;</a>
+        <div class="dropdown">
+          <a href="#sluzby">Osobní trénink</a>
+          <a href="#sluzby">Online konzultace</a>
+          <a href="#sluzby">Skupinové tréninky</a>
+          <a href="#sluzby">Laktátové testy</a>
+          <a href="#kempy">Kempy 2026 🏕</a>
+        </div>
+      </div>
+
+      <div class="nav-item">
+        <a href="#eshop">Vzdělávání &#9662;</a>
+        <div class="dropdown">
+          <a href="#eshop">E-shop</a>
+          <a href="#webinare">Webináře</a>
+          <a href="#clenky">Členství</a>
+        </div>
+      </div>
+
+      <a href="#blog">Blog</a>
+      <a href="#o-mne">O mně</a>
+      <a href="#kontakt">Kontakt</a>
+    </nav>
+
+    <a href="#" id="nav-login-btn" class="nav-login-btn" onclick="openLogin();return false;">Přihlásit se</a>
+    <div id="nav-user" class="nav-user" onclick="toggleNavUser(event)">
+      <div class="nav-avatar" id="nav-av"></div>
+      <span class="nav-uname" id="nav-uname"></span>
+      <div class="nav-user-dd" id="nav-user-dd">
+        <a href="#" onclick="openDashboard();return false;">&#128200; Přehled</a>
+        <a href="#" onclick="openDashboard();setTimeout(()=>switchTab('plan',document.querySelectorAll('.dash-nav-item')[1]),50);return false;">&#128203; Tréninkový plán</a>
+        <a href="#" onclick="openDashboard();setTimeout(()=>switchTab('komunita',document.querySelectorAll('.dash-nav-item')[4]),50);return false;">&#128101; Komunita</a>
+        <hr />
+        <button class="dd-logout" onclick="doLogout()">Odhlásit se</button>
+      </div>
+    </div>
+
+    <div class="hamburger" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+</header>
+
+<!-- Hero -->
+<section id="uvod" class="hero">
+  <div class="hero-bg"></div>
+  <div class="container">
+    <div class="hero-content">
+      <span class="hero-tag">Certifikovaný běžecký trenér</span>
+      <h1 id="hero-title">Běh mi ukázal správnou cestu&nbsp;–&nbsp;stal se mou vášní</h1>
+      <p id="hero-desc">Pomáhám lidem všech úrovní dosáhnout jejich běžeckých cílů. Od prvního kilometru až po maratonský cíl – jsem tu pro vás.</p>
+      <div class="hero-btns">
+        <a href="#sluzby" class="btn btn-green">Moje služby</a>
+        <a href="#kontakt" class="btn btn-outline" style="color:#fff;border-color:#fff;">Nezávazná konzultace</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats Bar -->
+<div class="stats-bar">
+  <div class="container">
+    <div class="stats-grid">
+      <div>
+        <div class="stat-num">500+</div>
+        <div class="stat-label">spokojených klientů</div>
+      </div>
+      <div>
+        <div class="stat-num">8</div>
+        <div class="stat-label">let zkušeností</div>
+      </div>
+      <div>
+        <div class="stat-num">12</div>
+        <div class="stat-label">absolvovaných maratonů</div>
+      </div>
+      <div>
+        <div class="stat-num">3</div>
+        <div class="stat-label">certifikace trenéra</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Services -->
+<section id="sluzby" class="services">
+  <div class="container">
+    <div class="section-header">
+      <h2>Tréninkové služby</h2>
+      <p>Vyberte si způsob spolupráce, který vám nejlépe vyhovuje. Každý plán je individuálně přizpůsoben vašim cílům.</p>
+    </div>
+    <div class="services-grid" id="services-grid"></div>
+  </div>
+</section>
+
+<!-- Challenge Banner -->
+<div class="challenge-banner">
+  <div class="container">
+    <div class="challenge-inner">
+      <div class="challenge-text">
+        <h2>Bezecká výzva – každý kilometr pomáhá</h2>
+        <p>Přidejte se k naší komunitě #TYMDEJVID a společně přeběhneme vzdálenost Praha–Keňa. Každý kilometr putuje na dobročinné účely.</p>
+      </div>
+      <a href="#komunita" class="btn btn-white">Chci se zapojit</a>
+    </div>
+  </div>
+</div>
+
+<!-- E-SHOP -->
+<section id="eshop" class="eshop-section">
+  <div class="container">
+    <div class="section-header">
+      <h2>E-shop</h2>
+      <p>Tréninkové plány, poukazy a kurzy připravené přesně pro běžce. Stáhněte si plán a začněte hned dnes.</p>
+    </div>
+    <div class="shop-filters">
+      <button class="shop-filter-btn active" onclick="filterShop('all',this)">Vše</button>
+      <button class="shop-filter-btn" onclick="filterShop('plan',this)">Tréninkové plány</button>
+      <button class="shop-filter-btn" onclick="filterShop('test',this)">Testy & analýzy</button>
+      <button class="shop-filter-btn" onclick="filterShop('voucher',this)">Dárkové poukazy</button>
+      <button class="shop-filter-btn" onclick="filterShop('merch',this)">Merch</button>
+    </div>
+    <div class="shop-grid" id="public-shop-grid"></div>
+    <div style="text-align:center;margin-top:40px">
+      <p style="color:var(--text-light);font-size:14px;margin-bottom:14px">Bezpečná platba kartou · Okamžité doručení na e-mail · 30denní záruka vrácení peněz</p>
+      <div style="display:flex;justify-content:center;gap:20px;font-size:28px;margin-bottom:6px">💳 🔒 📧</div>
+    </div>
+  </div>
+</section>
+
+<!-- WEBINÁŘE -->
+<section id="webinare" class="webinars-section">
+  <div class="container">
+    <div class="section-header">
+      <h2>Webináře &amp; online kurzy</h2>
+      <p>Vzdělávejte se z pohodlí domova. Živé webináře i nahrávky on-demand — kdykoli, odkudkoli.</p>
+    </div>
+    <div class="webinars-grid">
+
+      <div class="webinar-card">
+        <div class="webinar-header">
+          <span class="webinar-type wt-live">🔴 LIVE</span><span class="webinar-type wt-free" style="margin-left:8px">ZDARMA</span>
+          <h3>Jak správně dýchat při běhu</h3>
+          <div class="webinar-date">📅 15. dubna 2026 · 19:00 hod</div>
+        </div>
+        <div class="webinar-body">
+          <p>Dýchání ovlivňuje tempo, únavu i výkon. Na živém webináři se naučíte techniku bráničního dýchání, dechovou kadenci a jak předcházet boku.</p>
+          <div class="webinar-tags">
+            <span class="webinar-tag">Technika</span>
+            <span class="webinar-tag">Dýchání</span>
+            <span class="webinar-tag">Začátečníci</span>
+          </div>
+          <div class="webinar-footer">
+            <div class="webinar-price free">Zdarma</div>
+            <div>
+              <div class="webinar-spots">⚡ 47 / 100 míst obsazeno</div>
+              <button class="btn btn-green" style="margin-top:8px;width:100%">Zaregistrovat se</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="webinar-card">
+        <div class="webinar-header">
+          <span class="webinar-type wt-live">🔴 LIVE</span>
+          <h3>Zimní příprava na jarní sezónu</h3>
+          <div class="webinar-date">📅 29. dubna 2026 · 18:30 hod</div>
+        </div>
+        <div class="webinar-body">
+          <p>Jak efektivně trénovat v zimě a být připravený na jarní závody. Tréninkové principy, regenerace, silová příprava a mentální nastavení.</p>
+          <div class="webinar-tags">
+            <span class="webinar-tag">Plánování</span>
+            <span class="webinar-tag">Závodní příprava</span>
+            <span class="webinar-tag">Silový trénink</span>
+          </div>
+          <div class="webinar-footer">
+            <div class="webinar-price">299 Kč</div>
+            <div>
+              <div class="webinar-spots">⚡ 31 / 50 míst obsazeno</div>
+              <button class="btn btn-green" style="margin-top:8px;width:100%">Koupit vstupenku</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="webinar-card">
+        <div class="webinar-header" style="background:linear-gradient(135deg,#53a31d,#3d7a15)">
+          <span class="webinar-type wt-recording">📹 NAHRÁVKA</span>
+          <h3>Laktátové testy – proč a jak?</h3>
+          <div class="webinar-date">📅 Kdykoliv na vyžádání · 90 min</div>
+        </div>
+        <div class="webinar-body">
+          <p>Kompletní průvodce laktátovým testováním. Co to je, jak probíhá test, jak číst výsledky a jak pak nastavit tréninkové zóny pro maximální efektivitu.</p>
+          <div class="webinar-tags">
+            <span class="webinar-tag">Laktát</span>
+            <span class="webinar-tag">Tréninkové zóny</span>
+            <span class="webinar-tag">Pokročilí</span>
+          </div>
+          <div class="webinar-footer">
+            <div class="webinar-price">199 Kč</div>
+            <div>
+              <button class="btn btn-green" style="margin-top:8px;width:100%">Koupit nahrávku</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div style="text-align:center;margin-top:40px">
+      <p style="color:var(--text-light);font-size:15px;margin-bottom:16px">Jsi členem? Webináře Aktivní a Pro jsou zahrnuty v členství zdarma.</p>
+      <a href="#clenky" class="btn btn-outline">Zobrazit členské plány</a>
+    </div>
+  </div>
+</section>
+
+<!-- KEMPY 2026 -->
+<section id="kempy" class="camps-section">
+  <div class="container">
+    <div class="section-header">
+      <h2>Běžecké kempy 2026</h2>
+      <p>Intenzivní trénink na úžasných místech. Malé skupinky, osobní přístup a zážitky na celý život.</p>
+    </div>
+    <div class="camps-grid">
+
+      <div class="camp-card">
+        <div class="camp-img">
+          <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=900&q=80" alt="Tatry kemp 2026" />
+          <div class="camp-overlay">
+            <div class="camp-location">📍 Vysoké Tatry, Slovensko</div>
+          </div>
+          <div class="camp-spots-badge">⚡ Posledních 5 míst!</div>
+        </div>
+        <div class="camp-body">
+          <div class="camp-dates">📅 15.–22. července 2026 · 7 nocí</div>
+          <h3>Letní kemp v Tatrách 2026</h3>
+          <p>Týden intenzivního horského běhu v krásném prostředí Vysokých Tater. Každé ráno trailový výběh, odpoledne technika a silová příprava, večer společná analýza tréninku.</p>
+          <ul class="camp-includes">
+            <li>Ubytování v horské chatě</li>
+            <li>Plná penze (5× denně)</li>
+            <li>Laktátový test při příjezdu</li>
+            <li>Individuální tréninkový plán</li>
+            <li>Videoanalýza běžeckého kroku</li>
+            <li>Skupinové i individuální tréninky</li>
+            <li>Přednášky o výživě a regeneraci</li>
+            <li>Tréninkový deník po kempu</li>
+          </ul>
+          <div class="camp-footer">
+            <div class="camp-price">12 500 Kč <small>/ osoba</small></div>
+            <a href="#kontakt" class="btn btn-green">Rezervovat místo</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="camp-card">
+        <div class="camp-img">
+          <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=900&q=80" alt="Chorvatsko kemp 2026" />
+          <div class="camp-overlay">
+            <div class="camp-location">📍 Istrie, Chorvatsko</div>
+          </div>
+        </div>
+        <div class="camp-body">
+          <div class="camp-dates">📅 12.–19. září 2026 · 7 nocí</div>
+          <h3>Podzimní kemp u moře – Istrie</h3>
+          <p>Závodní příprava na podzimní sezónu v dokonalých podmínkách. Rovné cesty podél moře, příjemné teploty a skvělá parta. Ideální pro přípravu na říjnové a listopadové maratony.</p>
+          <ul class="camp-includes">
+            <li>Apartmán přímo u moře</li>
+            <li>Polopenzia (snídaně + večeře)</li>
+            <li>Závodní přípravný plán na 12 týdnů</li>
+            <li>Tempo tréninky &amp; intervaly</li>
+            <li>Videoanalýza běžecké techniky</li>
+            <li>Výlet lodí – aktivní den off</li>
+            <li>Nutriční poradenství pro závod</li>
+            <li>Uzavřená skupina na Discordu</li>
+          </ul>
+          <div class="camp-footer">
+            <div class="camp-price">14 900 Kč <small>/ osoba</small></div>
+            <a href="#kontakt" class="btn btn-green">Rezervovat místo</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div style="background:var(--bg-light);border-radius:14px;padding:28px 32px;margin-top:40px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
+      <div>
+        <div style="font-family:'Baloo 2',sans-serif;font-size:18px;font-weight:700;color:var(--blue-dark);margin-bottom:6px">Chystáte se ve skupince nebo máte zájem o vlastní kemp?</div>
+        <p style="color:var(--text-light);font-size:15px;margin:0">Organizuju také kempy na míru pro firmy, sportovní kluby nebo přátele. Napište mi!</p>
+      </div>
+      <a href="#kontakt" class="btn btn-green">Napsat Davidovi</a>
+    </div>
+  </div>
+</section>
+
+<!-- JAK TO FUNGUJE -->
+<section class="how-section">
+  <div class="container">
+    <div class="section-header">
+      <h2>Jak začít spolupracovat</h2>
+      <p>Čtyři jednoduché kroky k lepšímu běhu.</p>
+    </div>
+    <div class="steps-row">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Napište mi</h3>
+        <p>Vyplňte kontaktní formulář nebo mi napište na Instagram. Ozvu se do 24 hodin.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Úvodní konzultace</h3>
+        <p>Zdarma 30minutový hovor, kde si řekneme vaše cíle, historii a možnosti spolupráce.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Plán na míru</h3>
+        <p>Připravím pro vás individuální tréninkový plán v aplikaci TrainingPeaks nebo Garmin.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>Začínáme!</h3>
+        <p>Sledujeme pokrok, upravujeme plán a společně dosahujeme vašich cílů krok za krokem.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Blog -->
+<section id="blog">
+  <div class="container">
+    <div class="section-header">
+      <h2>Z mého blogu</h2>
+      <p>Tipy, zkušenosti a příběhy ze světa běhu. Nové články každý týden.</p>
+    </div>
+    <div class="posts-grid" id="posts-grid"></div>
+  </div>
+</section>
+
+<!-- About -->
+<section id="o-mne" class="about">
+  <div class="container">
+    <div class="about-grid">
+      <div class="about-img">
+        <img src="https://images.unsplash.com/photo-1538805060514-97d9cc17730c?w=700&q=80" alt="David Vaš – běžecký trenér" />
+      </div>
+      <div class="about-text">
+        <h2>Ahoj, jsem David Vaš</h2>
+        <p>Začal jsem běhat jako hobby před deseti lety a dnes je to moje životní poslání. Prošel jsem tréninkovými campy v Keni a Etiopii, absolvoval jsem dvanáct maratonů a pomohl stovkám lidí překonat jejich vlastní limity.</p>
+        <p>Věřím, že každý člověk je schopen dosáhnout víc, než si myslí. Mým cílem je být vaším průvodcem na cestě k lepší verzi sebe sama – krok za krokem, kilometr za kilometrem.</p>
+        <ul class="cert-list">
+          <li>Certifikovaný atletický trenér II. třídy (ČAS)</li>
+          <li>IAAF Kids' Athletics certifikát</li>
+          <li>Certifikát Running Coach – Athletics Ireland</li>
+          <li>Laktátový tester – FreeStyle Lactate</li>
+          <li>First Aid & Sports Nutrition certifikát</li>
+        </ul>
+        <a href="#kontakt" class="btn btn-green">Pojďme spolupracovat</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Community -->
+<section id="komunita" class="community">
+  <div class="container">
+    <div class="section-header">
+      <h2>#TYMDEJVID</h2>
+      <p>Přidejte se ke komunitě běžců, kteří si navzájem pomáhají, motivují se a společně rostou.</p>
+    </div>
+    <div class="community-grid">
+      <div class="community-card">
+        <h3>Exkluzivní obsah</h3>
+        <p>Přístup k tréninkovým plánům, videím z technikových klinik a zápisům ze soustředění v Keni a Etiopii.</p>
+      </div>
+      <div class="community-card">
+        <h3>Skupinové výzvy</h3>
+        <p>Každý měsíc nová výzva pro celý tým. Sbírejte kilometry, plňte cíle a získávejte odměny.</p>
+      </div>
+      <div class="community-card">
+        <h3>Přímý přístup ke mně</h3>
+        <p>Chat, Q&A lives a osobní feedback na vaše tréninky přímo od trenéra. Bez čekání, bez mezičlánků.</p>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:40px;">
+      <a href="#kontakt" class="btn btn-green">Chci vstoupit do komunity</a>
+    </div>
+  </div>
+</section>
+
+<!-- Testimonials -->
+<section id="recenze" class="testimonials">
+  <div class="container">
+    <div class="section-header">
+      <h2>Co říkají moji klienti</h2>
+      <p>Přes 500 spokojených běžců – jejich výsledky mluví za vše.</p>
+    </div>
+    <div class="reviews-grid">
+
+      <div class="review-card">
+        <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p>"S Davidem jsem se zlepšila za půl roku víc než za předchozí tři roky. Doběhla jsem svůj první půlmaraton a máme v plánu další!"</p>
+        <div class="reviewer">
+          <div class="reviewer-avatar">K</div>
+          <div>
+            <div class="reviewer-name">Kateřina M.</div>
+            <div class="reviewer-detail">Praha &bull; půlmaraton za 1:58</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="review-card">
+        <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p>"Laktátový test otevřel oči – celý rok jsem trénoval příliš tvrdě a pak se divil, proč se nezlepšuji. David mi ukázal správnou cestu."</p>
+        <div class="reviewer">
+          <div class="reviewer-avatar">M</div>
+          <div>
+            <div class="reviewer-name">Martin H.</div>
+            <div class="reviewer-detail">Brno &bull; maraton za 3:24</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="review-card">
+        <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p>"Online spolupráce funguje skvěle. Plán je vždy aktuální, David reaguje rychle a vždy ví, co a proč. Doporučuji každému."</p>
+        <div class="reviewer">
+          <div class="reviewer-avatar">L</div>
+          <div>
+            <div class="reviewer-name">Lucie P.</div>
+            <div class="reviewer-detail">Ostrava &bull; 10 km za 47:30</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Membership Plans -->
+<section id="clenky" class="membership-section">
+  <div class="container">
+    <div class="section-header">
+      <h2>Členské plány</h2>
+      <p>Vyberte si plán, který vám sedí. Přístup k tréninkovým plánům, videím a komunitě #TYMDEJVID.</p>
+    </div>
+    <div class="membership-grid">
+
+      <div class="memb-card">
+        <h3>Základní</h3>
+        <div class="memb-price">0 Kč<small>/měs</small></div>
+        <p class="memb-desc">Ideální pro začátečníky</p>
+        <ul class="memb-features">
+          <li>Přístup k blogu</li>
+          <li>Ukázkový tréninkový plán</li>
+          <li>Newsletter s tipy</li>
+          <li class="no">Plné tréninkové plány</li>
+          <li class="no">Video knihovna</li>
+          <li class="no">Komunitní feed</li>
+          <li class="no">Osobní zpětná vazba</li>
+        </ul>
+        <button class="btn btn-outline" onclick="openRegister('zakladni')" style="width:100%">Začít zdarma</button>
+      </div>
+
+      <div class="memb-card featured">
+        <span class="popular-badge">Nejoblíbenější</span>
+        <h3>Aktivní</h3>
+        <div class="memb-price">299 Kč<small>/měs</small></div>
+        <p class="memb-desc">Pro pravidelné běžce</p>
+        <ul class="memb-features">
+          <li>Vše ze Základního</li>
+          <li>Plné tréninkové plány</li>
+          <li>Video knihovna (20+ videí)</li>
+          <li>Komunitní feed</li>
+          <li>Výsledková tabulka</li>
+          <li class="no">Osobní zpětná vazba</li>
+          <li class="no">Přímá komunikace s trenérem</li>
+        </ul>
+        <button class="btn btn-green" onclick="openRegister('aktivni')" style="width:100%">Vybrat Aktivní</button>
+      </div>
+
+      <div class="memb-card">
+        <h3>Pro</h3>
+        <div class="memb-price">599 Kč<small>/měs</small></div>
+        <p class="memb-desc">Pro ambiciózní závodníky</p>
+        <ul class="memb-features">
+          <li>Vše z Aktivního</li>
+          <li>Osobní zpětná vazba trenéra</li>
+          <li>Přímá komunikace přes chat</li>
+          <li>Prémiová videa a analýzy</li>
+          <li>Měsíční videohovor</li>
+          <li>Priority podpora</li>
+          <li>Závodní strategie na míru</li>
+        </ul>
+        <button class="btn btn-green" onclick="openRegister('pro')" style="width:100%">Vybrat Pro</button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Contact -->
+<section id="kontakt">
+  <div class="container">
+    <div class="contact-grid">
+      <div class="contact-info">
+        <h2>Pojďme se spojit</h2>
+        <p>Máte otázku, chcete nezávaznou konzultaci nebo rovnou začít spolupracovat? Napište mi – ozvu se do 24 hodin.</p>
+
+        <div class="contact-item">
+          <div class="contact-icon">&#128231;</div>
+          <span>info@davidvas.cz</span>
+        </div>
+        <div class="contact-item">
+          <div class="contact-icon">&#128222;</div>
+          <span>+420 777 123 456</span>
+        </div>
+        <div class="contact-item">
+          <div class="contact-icon">&#128205;</div>
+          <span>Praha, Česká republika</span>
+        </div>
+
+        <div class="social-links">
+          <a class="social-link" href="#" title="Facebook">&#128100;</a>
+          <a class="social-link" href="#" title="Instagram">&#128247;</a>
+          <a class="social-link" href="#" title="YouTube">&#127909;</a>
+          <a class="social-link" href="#" title="Strava">&#127939;</a>
+        </div>
+      </div>
+
+      <div class="contact-form">
+        <h3>Napište mi</h3>
+        <form onsubmit="handleSubmit(event)">
+          <div class="form-group">
+            <label for="name">Jméno a příjmení *</label>
+            <input type="text" id="name" placeholder="Jana Nováková" required />
+          </div>
+          <div class="form-group">
+            <label for="email">E-mail *</label>
+            <input type="email" id="email" placeholder="jana@email.cz" required />
+          </div>
+          <div class="form-group">
+            <label for="service">Zájem o službu</label>
+            <select id="service">
+              <option value="">-- vyberte --</option>
+              <option>Osobní trénink</option>
+              <option>Online konzultace</option>
+              <option>Tréninkový plán</option>
+              <option>Laktátový test</option>
+              <option>Skupinový trénink</option>
+              <option>Jiné</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="message">Zpráva *</label>
+            <textarea id="message" placeholder="Popište svůj cíl nebo dotaz..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-green" style="width:100%">Odeslat zprávu</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#uvod" class="logo">David<span style="color:var(--green)">Vaš</span></a>
+        <p>Certifikovaný běžecký trenér pomáhající lidem v Česku i online dosahovat jejich běžeckých snů – od 5 km po ultramaraton.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Služby</h4>
+        <ul>
+          <li><a href="#sluzby">Osobní trénink</a></li>
+          <li><a href="#sluzby">Online konzultace</a></li>
+          <li><a href="#sluzby">Tréninkové plány</a></li>
+          <li><a href="#sluzby">Laktátový test</a></li>
+          <li><a href="#sluzby">Skupinové tréninky</a></li>
+          <li><a href="#kempy">Kempy 2026</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Vzdělávání</h4>
+        <ul>
+          <li><a href="#eshop">E-shop</a></li>
+          <li><a href="#webinare">Webináře</a></li>
+          <li><a href="#blog">Blog</a></li>
+          <li><a href="#clenky">Členství</a></li>
+          <li><a href="#komunita">#TYMDEJVID</a></li>
+          <li><a href="#recenze">Recenze</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Právní info</h4>
+        <ul>
+          <li><a href="#">Obchodní podmínky</a></li>
+          <li><a href="#">Ochrana osobních údajů</a></li>
+          <li><a href="#">Cookies</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 David Vaš – Certifikovaný běžecký trenér</span>
+      <span>Vytvořeno s <span style="color:var(--green)">&#9829;</span> pro běžce</span>
+    </div>
+  </div>
+</footer>
+
+<!-- LOGIN MODAL -->
+<div id="modal-login" class="modal-overlay">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModals()">&times;</button>
+    <h2>Přihlášení</h2>
+    <p class="modal-sub">Vítejte zpět! Přihlaste se ke svému účtu.</p>
+    <div id="login-error" class="modal-error">Nesprávný e-mail nebo heslo.</div>
+    <div class="form-group sm"><label>E-mail</label><input type="email" id="login-email" placeholder="vas@email.cz" /></div>
+    <div class="form-group sm"><label>Heslo</label><input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" /></div>
+    <button class="btn btn-green" style="width:100%;margin-top:8px" onclick="doLogin()">Přihlásit se</button>
+    <p class="modal-switch">Nemáte účet? <span onclick="switchToRegister()">Registrujte se</span></p>
+    <p style="text-align:center;font-size:12px;color:var(--text-light);margin-top:10px">Demo: demo@test.cz / heslo123</p>
+  </div>
+</div>
+
+<!-- REGISTER MODAL -->
+<div id="modal-register" class="modal-overlay">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModals()">&times;</button>
+    <h2>Registrace</h2>
+    <p class="modal-sub">Vytvořte si účet a získejte přístup k obsahu.</p>
+    <div id="reg-error" class="modal-error"></div>
+    <div class="form-group sm"><label>Jméno a příjmení</label><input type="text" id="reg-name" placeholder="Jana Nováková" /></div>
+    <div class="form-group sm"><label>E-mail</label><input type="email" id="reg-email" placeholder="jana@email.cz" /></div>
+    <div class="form-group sm"><label>Heslo (min. 6 znaků)</label><input type="password" id="reg-pass" placeholder="••••••••" /></div>
+    <div class="form-group sm">
+      <label>Členský plán</label>
+      <select id="reg-tier">
+        <option value="zakladni">Základní – zdarma</option>
+        <option value="aktivni">Aktivní – 299 Kč/měs</option>
+        <option value="pro">Pro – 599 Kč/měs</option>
+      </select>
+    </div>
+    <button class="btn btn-green" style="width:100%;margin-top:8px" onclick="doRegister()">Vytvořit účet</button>
+    <p class="modal-switch">Již máte účet? <span onclick="switchToLogin()">Přihlaste se</span></p>
+  </div>
+</div>
+
+<!-- UPGRADE MODAL -->
+<div id="modal-upgrade" class="modal-overlay">
+  <div class="modal-box" style="max-width:560px">
+    <button class="modal-close" onclick="closeModals()">&times;</button>
+    <h2>Upgradovat členství</h2>
+    <p class="modal-sub">Vyberte nový plán. Změna je okamžitá.</p>
+    <div class="upgrade-tiers">
+      <div class="upgrade-tier" onclick="selectUpgradeTier('zakladni',this)">
+        <h4>Základní</h4><div class="utp">0 Kč<small>/měs</small></div>
+        <ul><li>Blog &amp; newsletter</li><li>Ukázkový plán</li></ul>
+      </div>
+      <div class="upgrade-tier" onclick="selectUpgradeTier('aktivni',this)">
+        <h4>Aktivní</h4><div class="utp">299 Kč<small>/měs</small></div>
+        <ul><li>Plány &amp; videa</li><li>Komunita</li><li>Výsledky</li></ul>
+      </div>
+      <div class="upgrade-tier" onclick="selectUpgradeTier('pro',this)">
+        <h4>Pro</h4><div class="utp">599 Kč<small>/měs</small></div>
+        <ul><li>Vše z Aktivního</li><li>Osobní zpětná vazba</li><li>Měsíční hovor</li></ul>
+      </div>
+    </div>
+    <button class="btn btn-green" style="width:100%" onclick="doUpgrade()">Potvrdit změnu</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <aside class="dash-sidebar">
+    <div class="dash-logo-wrap"><span class="logo">David<span>Vaš</span></span></div>
+    <div class="dash-user-info">
+      <div class="dash-avatar" id="dash-av"></div>
+      <div><div class="dash-uname" id="dash-uname"></div><div class="dash-tier-lbl" id="dash-tier-lbl"></div></div>
+    </div>
+    <nav class="dash-nav">
+      <div class="dash-nav-section-label">Hlavní</div>
+      <div class="dash-nav-item active" onclick="switchTab('prehled',this)">
+        <span class="dash-nav-icon">&#128200;</span> Přehled
+      </div>
+      <div class="dash-nav-item" onclick="switchTab('plan',this)">
+        <span class="dash-nav-icon">&#128203;</span> Tréninkový plán
+      </div>
+      <div class="dash-nav-item" onclick="switchTab('videa',this)">
+        <span class="dash-nav-icon">&#127909;</span> Videa
+      </div>
+      <div class="dash-nav-item" onclick="switchTab('vysledky',this)">
+        <span class="dash-nav-icon">&#127942;</span> Výsledky
+      </div>
+      <div class="dash-nav-section-label">Komunita</div>
+      <div class="dash-nav-item" onclick="switchTab('komunita',this)">
+        <span class="dash-nav-icon">&#128101;</span> Komunita
+      </div>
+      <div class="dash-nav-section-label">Účet</div>
+      <div class="dash-nav-item" onclick="switchTab('profil',this)">
+        <span class="dash-nav-icon">&#128100;</span> Profil
+      </div>
+      <div class="dash-nav-item" id="admin-nav-item" style="display:none" onclick="switchTab('admin',this)">
+        <span class="dash-nav-icon">&#9965;</span> Admin panel
+      </div>
+    </nav>
+    <div class="dash-footer">
+      <button class="dash-btn dash-btn-back" onclick="closeDashboard()">
+        <span>&#8592;</span> Zpět na web
+      </button>
+      <button class="dash-btn dash-btn-logout" onclick="doLogout()">
+        <span>&#128275;</span> Odhlásit se
+      </button>
+    </div>
+  </aside>
+
+  <main class="dash-main">
+
+    <!-- PŘEHLED -->
+    <div class="dash-tab active" id="tab-prehled">
+      <h2 class="dash-title">Přehled</h2>
+      <div class="dstat-row">
+        <div class="dstat"><div class="dl">Km tento týden</div><div class="dv">46</div><div class="ds">+12 % vs. minulý týden</div></div>
+        <div class="dstat"><div class="dl">Tréninky tento měsíc</div><div class="dv">14</div><div class="ds">Cíl: 16</div></div>
+        <div class="dstat"><div class="dl">Série (dny)</div><div class="dv">7</div><div class="ds">Osobní rekord: 21</div></div>
+        <div class="dstat"><div class="dl">Další závod za</div><div class="dv">38</div><div class="ds">dní – Pražský maraton</div></div>
+      </div>
+      <div class="next-wo">
+        <div>
+          <div class="next-wo-label">Dnešní trénink</div>
+          <div class="next-wo-name">Intervalový trénink</div>
+          <div class="next-wo-detail">6×1000m s 90s odpočinkem &bull; Cílové tempo 4:05/km</div>
+        </div>
+        <div class="wo-pill">&#9654; Zahájit</div>
+      </div>
+      <div class="week-chart">
+        <h3>Kilometráž tento týden</h3>
+        <div class="week-bars">
+          <div class="wbar-wrap"><div class="wbar-name">Po</div><div class="wbar-track"><div class="wbar-fill" style="height:36%"></div></div><div class="wbar-km">8 km</div></div>
+          <div class="wbar-wrap"><div class="wbar-name">Út</div><div class="wbar-track"><div class="wbar-fill rest"></div></div><div class="wbar-km">Síla</div></div>
+          <div class="wbar-wrap"><div class="wbar-name">St</div><div class="wbar-track"><div class="wbar-fill" style="height:45%"></div></div><div class="wbar-km">10 km</div></div>
+          <div class="wbar-wrap"><div class="wbar-name">Čt</div><div class="wbar-track"><div class="wbar-fill rest"></div></div><div class="wbar-km">Volno</div></div>
+          <div class="wbar-wrap"><div class="wbar-name">Pá</div><div class="wbar-track"><div class="wbar-fill today" style="height:27%"></div></div><div class="wbar-km">6 km</div></div>
+          <div class="wbar-wrap"><div class="wbar-name">So</div><div class="wbar-track"><div class="wbar-fill" style="height:0%"></div></div><div class="wbar-km">22 km</div></div>
+          <div class="wbar-wrap"><div class="wbar-name">Ne</div><div class="wbar-track"><div class="wbar-fill rest"></div></div><div class="wbar-km">Odpočinek</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRÉNINKOVÝ PLÁN -->
+    <div class="dash-tab" id="tab-plan">
+      <h2 class="dash-title">Tréninkový plán</h2>
+      <div id="plan-table-container"></div>
+    </div>
+
+    <!-- VIDEA -->
+    <div class="dash-tab" id="tab-videa">
+      <h2 class="dash-title">Video knihovna</h2>
+      <div class="vid-grid" id="vid-grid"></div>
+    </div>
+
+    <!-- VÝSLEDKY -->
+    <div class="dash-tab" id="tab-vysledky">
+      <h2 class="dash-title">Moje výsledky</h2>
+      <div class="rec-grid">
+        <div class="rec-card"><div class="rec-icon">&#127939;</div><div><div class="rec-dist">5 km</div><div class="rec-time">21:34</div><div class="rec-date">Říjen 2025</div></div></div>
+        <div class="rec-card"><div class="rec-icon">&#127939;</div><div><div class="rec-dist">10 km</div><div class="rec-time">45:12</div><div class="rec-date">Září 2025</div></div></div>
+        <div class="rec-card"><div class="rec-icon">&#127942;</div><div><div class="rec-dist">Půlmaraton</div><div class="rec-time">1:52:30</div><div class="rec-date">Říjen 2024</div></div></div>
+        <div class="rec-card"><div class="rec-icon">&#127942;</div><div><div class="rec-dist">Maraton</div><div class="rec-time">–</div><div class="rec-date">Cíl: Pražský 2026</div></div></div>
+      </div>
+      <h3 style="font-size:18px;color:var(--blue-dark);margin-bottom:16px;">Poslední závody</h3>
+      <table class="races-table">
+        <thead><tr><th>Závod</th><th>Datum</th><th>Vzdálenost</th><th>Čas</th><th>Umístění</th></tr></thead>
+        <tbody>
+          <tr><td>Pražský půlmaraton</td><td>23. 3. 2025</td><td>21,1 km</td><td>1:52:30</td><td>134. / 2 840</td></tr>
+          <tr><td>RunCzech Running League</td><td>15. 2. 2025</td><td>10 km</td><td>45:12</td><td>56. / 1 200</td></tr>
+          <tr><td>Silvestrovský běh Praha</td><td>31. 12. 2024</td><td>5 km</td><td>21:34</td><td>18. / 650</td></tr>
+          <tr><td>Karlštejnský půlmaraton</td><td>22. 9. 2024</td><td>21,1 km</td><td>1:58:04</td><td>201. / 1 800</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- KOMUNITA -->
+    <div class="dash-tab" id="tab-komunita">
+      <h2 class="dash-title">Komunitní feed #TYMDEJVID</h2>
+      <div class="feed-composer">
+        <div class="feed-av" id="feed-composer-av"></div>
+        <textarea id="feed-input" placeholder="Sdílejte trénink, otázku nebo motivaci..."></textarea>
+        <button class="btn btn-green" style="padding:10px 18px;flex-shrink:0" onclick="postFeed()">Odeslat</button>
+      </div>
+      <div class="feed-list" id="feed-list"></div>
+    </div>
+
+    <!-- PROFIL -->
+    <div class="dash-tab" id="tab-profil">
+      <h2 class="dash-title">Můj profil</h2>
+      <div class="prof-grid">
+        <div class="prof-card">
+          <div class="prof-big-av" id="prof-big-av"></div>
+          <div class="prof-name" id="prof-name"></div>
+          <div class="prof-email" id="prof-email"></div>
+          <div class="prof-tier-box">
+            <div class="prof-tier-lbl">Aktuální plán</div>
+            <div class="prof-tier-val" id="prof-tier-val"></div>
+          </div>
+          <button class="prof-upgrade" onclick="openUpgrade()">Upgradovat plán</button>
+        </div>
+        <div class="prof-form-card">
+          <h3>Upravit profil</h3>
+          <div class="form-group"><label>Jméno a příjmení</label><input type="text" id="prof-edit-name" /></div>
+          <div class="form-group"><label>E-mail</label><input type="email" id="prof-edit-email" /></div>
+          <div class="form-group"><label>Nové heslo (prázdné = beze změny)</label><input type="password" id="prof-edit-pass" placeholder="••••••••" /></div>
+          <div class="form-group">
+            <label>Váš cíl</label>
+            <select id="prof-edit-goal">
+              <option>Doběhnout první 5 km</option>
+              <option>Zlepšit čas na 10 km</option>
+              <option>Doběhnout půlmaraton</option>
+              <option>Doběhnout maraton</option>
+              <option>Ultramaraton</option>
+              <option>Celková kondice</option>
+            </select>
+          </div>
+          <button class="btn btn-green" onclick="saveProfile()">Uložit změny</button>
+          <span id="prof-save-msg" style="font-size:13px;color:var(--green-deep);margin-left:12px;display:none">Uloženo!</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="dash-tab" id="tab-admin">
+      <h2 class="dash-title">&#9965; Admin panel</h2>
+      <p class="admin-note">Změny se projeví okamžitě na webu a uloží se do prohlížeče. Obsah lze kdykoliv resetovat na výchozí hodnoty.</p>
+      <div class="admin-tabs">
+        <button class="atab active" onclick="switchAdminTab('hero',this)">&#127968; Hero</button>
+        <button class="atab" onclick="switchAdminTab('sluzby',this)">&#127939; Služby</button>
+        <button class="atab" onclick="switchAdminTab('blog',this)">&#128240; Blog</button>
+        <button class="atab" onclick="switchAdminTab('plan',this)">&#128203; Plán</button>
+        <button class="atab" onclick="switchAdminTab('reset',this)" style="margin-left:auto;border-color:#fcc;color:#c00">&#9888; Reset</button>
+      </div>
+
+      <div class="admin-section active" id="asec-hero">
+        <div class="admin-card">
+          <h4>Hero sekce – úvodní text na titulní stránce</h4>
+          <div class="form-group"><label>Hlavní nadpis</label><input type="text" id="a-hero-title" /></div>
+          <div class="form-group"><label>Popis pod nadpisem</label><textarea id="a-hero-desc" style="min-height:80px"></textarea></div>
+          <button class="save-section-btn" onclick="saveHero()">Uložit hero</button>
+          <span class="save-ok" id="ok-hero">&#10003; Uloženo!</span>
+        </div>
+      </div>
+
+      <div class="admin-section" id="asec-sluzby">
+        <div id="admin-services-list"></div>
+        <button class="add-item-btn" onclick="addService()">+ Přidat službu</button>
+        <br/>
+        <button class="save-section-btn" onclick="saveServices()">Uložit všechny služby</button>
+        <span class="save-ok" id="ok-sluzby">&#10003; Uloženo!</span>
+      </div>
+
+      <div class="admin-section" id="asec-blog">
+        <div id="admin-posts-list"></div>
+        <button class="add-item-btn" onclick="addPost()">+ Přidat článek</button>
+        <br/>
+        <button class="save-section-btn" onclick="savePosts()">Uložit všechny články</button>
+        <span class="save-ok" id="ok-blog">&#10003; Uloženo!</span>
+      </div>
+
+      <div class="admin-section" id="asec-plan">
+        <div id="admin-plan-list"></div>
+        <button class="add-item-btn" onclick="addPlanRow()">+ Přidat trénink</button>
+        <br/>
+        <button class="save-section-btn" onclick="savePlan()">Uložit plán</button>
+        <span class="save-ok" id="ok-plan">&#10003; Uloženo!</span>
+      </div>
+
+      <div class="admin-section" id="asec-reset">
+        <div class="admin-card">
+          <h4>Resetovat obsah webu</h4>
+          <p style="color:var(--text-light);font-size:14px;margin-bottom:20px;line-height:1.7">Tímto resetujete veškerý editovaný obsah (hero text, služby, blog články, tréninkový plán) zpět na výchozí hodnoty. Uživatelské účty a komunitní feed zůstanou zachovány.</p>
+          <button class="save-section-btn" style="background:#c00" onclick="resetContent()">Resetovat obsah na výchozí hodnoty</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // ── MOBILE NAV ──────────────────────────────────
+  function toggleMenu() {
+    document.getElementById('mobile-menu').classList.toggle('open');
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type=submit]');
+    btn.textContent = 'Odesláno! Ozvu se brzy.';
+    btn.style.background = 'var(--green-deep)';
+    btn.disabled = true;
+  }
+
+  // ── STAT COUNTER ANIMATION ──────────────────────
+  const statNums = document.querySelectorAll('.stat-num');
+  const statObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const el = entry.target;
+        const target = parseInt(el.textContent);
+        if (isNaN(target)) return;
+        const suffix = el.textContent.replace(/[0-9]/g, '');
+        let current = 0;
+        const step = Math.ceil(target / 40);
+        const timer = setInterval(() => {
+          current = Math.min(current + step, target);
+          el.textContent = current + suffix;
+          if (current >= target) clearInterval(timer);
+        }, 35);
+        statObserver.unobserve(el);
+      }
+    });
+  }, { threshold: 0.5 });
+  statNums.forEach(el => statObserver.observe(el));
+
+  // ── AUTH ────────────────────────────────────────
+  const TIERS = { zakladni: 'Základní', aktivni: 'Aktivní', pro: 'Pro' };
+  const TIER_ORDER = ['zakladni', 'aktivni', 'pro'];
+
+  const Auth = {
+    getUsers() { return JSON.parse(localStorage.getItem('dv_users') || '[]'); },
+    saveUsers(u) { localStorage.setItem('dv_users', JSON.stringify(u)); },
+    getSession() { return JSON.parse(localStorage.getItem('dv_session') || 'null'); },
+    setSession(u) { localStorage.setItem('dv_session', JSON.stringify(u)); },
+    clearSession() { localStorage.removeItem('dv_session'); },
+    register(name, email, password, tier) {
+      const users = this.getUsers();
+      if (users.find(u => u.email === email)) return { ok: false, msg: 'E-mail je již registrován.' };
+      const user = { id: Date.now(), name, email, password, tier: tier || 'zakladni', goal: 'Doběhnout maraton' };
+      users.push(user);
+      this.saveUsers(users);
+      this.setSession(user);
+      return { ok: true, user };
+    },
+    login(email, password) {
+      const users = this.getUsers();
+      const user = users.find(u => u.email === email && u.password === password);
+      if (!user) return { ok: false };
+      this.setSession(user);
+      return { ok: true, user };
+    },
+    logout() { this.clearSession(); },
+    current() { return this.getSession(); },
+    updateUser(updates) {
+      const session = this.getSession();
+      if (!session) return null;
+      const users = this.getUsers();
+      const idx = users.findIndex(u => u.id === session.id);
+      if (idx === -1) return null;
+      Object.assign(users[idx], updates);
+      this.saveUsers(users);
+      this.setSession(users[idx]);
+      return users[idx];
+    }
+  };
+
+  // seed users
+  (function() {
+    const users = Auth.getUsers();
+    if (!users.find(u => u.email === 'demo@test.cz'))
+      users.push({ id: 1, name: 'Demo Uživatel', email: 'demo@test.cz', password: 'heslo123', tier: 'aktivni', goal: 'Doběhnout maraton' });
+    if (!users.find(u => u.email === 'admin@davidvas.cz'))
+      users.push({ id: 2, name: 'David Vaš', email: 'admin@davidvas.cz', password: 'admin123', tier: 'pro', isAdmin: true, goal: 'Ultramaraton' });
+    Auth.saveUsers(users);
+  })();
+
+  // ── CONTENT MANAGEMENT ──────────────────────────
+  const DEFAULT_CONTENT = {
+    hero: {
+      title: 'Běh mi ukázal správnou cestu\u00a0\u2013\u00a0stal se mou vášní',
+      desc: 'Pomáhám lidem všech úrovní dosáhnout jejich běžeckých cílů. Od prvního kilometru až po maratonský cíl – jsem tu pro vás.'
+    },
+    services: [
+      { icon: '🏃', name: 'Osobní trénink', desc: 'Individuální tréninky pod přímým vedením. Technická analýza běhu, korekce pohybu, motivace a okamžitá zpětná vazba.', price: 'od 900 Kč / hod' },
+      { icon: '💻', name: 'Online konzultace', desc: 'Videohovor, analýza vašeho tréninkového deníku a sestavení plánu na míru – pohodlně z domova.', price: 'od 600 Kč / hod' },
+      { icon: '📋', name: 'Tréninkový plán', desc: 'Strukturovaný plán sestavený přesně na váš cíl – 5 km, 10 km, půlmaraton nebo maraton.', price: 'od 1 200 Kč / měsíc' },
+      { icon: '📊', name: 'Laktátový test', desc: 'Přesné změření vašich tréninkových zón a aerobního prahu pro maximálně efektivní trénink.', price: 'od 1 800 Kč' },
+      { icon: '👥', name: 'Skupinové tréninky', desc: 'Pravidelné tréninky v Praze s partou motivovaných běžců. Každé pondělí a čtvrtek v 18:00.', price: 'od 250 Kč / trénink' },
+      { icon: '🏕', name: 'Běžecké soustředění', desc: 'Týdenní soustředění v horách nebo u moře. Intenzivní trénink, skvělá parta a krásné prostředí.', price: 'od 12 000 Kč / týden' }
+    ],
+    posts: [
+      { img: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600&q=80', meta: '28. února 2026 · Trénink', title: 'Zimní běhání: jak se nepřestat hýbat v mrazech', excerpt: 'Mráz, tma a kluzké chodníky – to jsou nepřátelé zimního běžce. Nebo jsou to vlastně výzvy?' },
+      { img: 'https://images.unsplash.com/photo-1502904550040-7534597429ae?w=600&q=80', meta: '14. února 2026 · Závody', title: 'Pražský maraton 2026 – jak se na něj připravit za 12 týdnů', excerpt: 'Přihlásili jste se na Pražský maraton? Tady je plán, který vám pomůže doběhnout v cíli s úsměvem.' },
+      { img: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80', meta: '2. února 2026 · Výživa', title: 'Co jíst před závodem? Průvodce výživou pro běžce', excerpt: 'Špagetová večeře, banán ráno nebo energetický gel? Odpovídám na nejčastější otázky o závodní výživě.' }
+    ],
+    plan: [
+      { day: 'Po 3.3.', name: 'Regenerační běh', note: 'Pomalé tempo, puls pod 140', zone: 'z2', dist: '8 km', done: true },
+      { day: 'Út 4.3.', name: 'Silový trénink', note: 'Dřepy, výpady, core 3×15', zone: 'sila', dist: '45 min', done: true },
+      { day: 'St 5.3.', name: 'Tempový běh', note: 'Tempo 4:30/km, rovnoměrně', zone: 'z3', dist: '10 km', done: true },
+      { day: 'Čt 6.3.', name: 'Odpočinek', note: 'Strečink nebo lehká jóga', zone: 'rest', dist: '–', done: true },
+      { day: 'Pá 7.3.', name: 'Intervalový trénink', note: '6×1000m, odpočinek 90s, tempo 4:05/km', zone: 'z4', dist: '6 km', done: false, today: true },
+      { day: 'So 8.3.', name: 'Dlouhý běh', note: 'Pomalé tempo Z2, gel na 14. km', zone: 'z2', dist: '22 km', done: false },
+      { day: 'Ne 9.3.', name: 'Odpočinek', note: 'Regenerace, foam rolling', zone: 'rest', dist: '–', done: false },
+      { day: 'Po 10.3.', name: 'Lehký běh', note: 'Velmi pomalé, puls pod 130', zone: 'z1', dist: '6 km', done: false },
+      { day: 'Út 11.3.', name: 'Fartlek', note: '8× 2 min rychle / 2 min pomalu', zone: 'z3', dist: '50 min', done: false },
+      { day: 'St 12.3.', name: 'Kopce', note: '8×200m do kopce, chůze zpět', zone: 'z4', dist: '8 km', done: false },
+      { day: 'Čt 13.3.', name: 'Odpočinek', note: 'Volitelně core 20 min', zone: 'rest', dist: '–', done: false },
+      { day: 'Pá 14.3.', name: 'Tempový běh', note: 'Tempo 4:40/km, konec rychleji', zone: 'z3', dist: '12 km', done: false },
+      { day: 'So 15.3.', name: 'Dlouhý běh', note: '+3 km oproti minulému týdnu', zone: 'z2', dist: '25 km', done: false },
+      { day: 'Ne 16.3.', name: 'Odpočinek', note: 'Masáž nebo sauna doporučena', zone: 'rest', dist: '–', done: false }
+    ]
+  };
+
+  // ── SHOP DATA ────────────────────────────────────
+  const SHOP_PRODUCTS = [
+    { id:1, cat:'plan', badge:'Bestseller', badgeCls:'', img:'https://images.unsplash.com/photo-1571731956672-f2b94d7dd0cb?w=500&q=80', name:'Tréninkový plán – 5 km', desc:'12týdenní plán od začátečníka k prvnímu závodem na 5 km. PDF + TrainingPeaks.', price:'499 Kč', oldPrice:null },
+    { id:2, cat:'plan', badge:'Nové', badgeCls:'new', img:'https://images.unsplash.com/photo-1504025468847-0e438279542c?w=500&q=80', name:'Tréninkový plán – 10 km', desc:'16týdenní plán pro runners, kteří chtějí překonat 10 km pod 55 min.', price:'699 Kč', oldPrice:null },
+    { id:3, cat:'plan', badge:'Populární', badgeCls:'', img:'https://images.unsplash.com/photo-1502904550040-7534597429ae?w=500&q=80', name:'Tréninkový plán – Půlmaraton', desc:'20týdenní plán k cíli. Tempové, intervalové i dlouhé běhy přesně rozplánované.', price:'899 Kč', oldPrice:'1 199 Kč' },
+    { id:4, cat:'plan', badge:'', badgeCls:'', img:'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=500&q=80', name:'Tréninkový plán – Maraton', desc:'24týdenní plán pro dospělé závodníky. Kompletní příprava na finišní čáru.', price:'1 199 Kč', oldPrice:null },
+    { id:5, cat:'test', badge:'Doporučeno', badgeCls:'', img:'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=500&q=80', name:'Laktátový test + analýza', desc:'Osobní test v Praze, stanovení prahů a tréninkových zón, report PDF do 48 hodin.', price:'1 800 Kč', oldPrice:null },
+    { id:6, cat:'test', badge:'', badgeCls:'', img:'https://images.unsplash.com/photo-1585228036278-9e6fd1e98023?w=500&q=80', name:'Videoanalýza běžecké techniky', desc:'Nahrajte video svého běhu, dostanete detailní zprávu s konkrétními doporučeními.', price:'590 Kč', oldPrice:null },
+    { id:7, cat:'voucher', badge:'Tip na dárek', badgeCls:'new', img:'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=500&q=80', name:'Dárkový poukaz – 1 hod trénink', desc:'Ideální dárek pro každého běžce. Platnost 12 měsíců, uplatnitelný na jakoukoliv službu.', price:'900 Kč', oldPrice:null },
+    { id:8, cat:'merch', badge:'Limitka', badgeCls:'sale', img:'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&q=80', name:'Tričko #TYMDEJVID', desc:'Prémiové funkční tričko z recyklovaného polyesteru. S, M, L, XL, XXL. Zelená / černá.', price:'590 Kč', oldPrice:'790 Kč' },
+  ];
+
+  let _shopFilter = 'all';
+
+  function renderShop(filter) {
+    _shopFilter = filter || _shopFilter;
+    const grid = document.getElementById('public-shop-grid');
+    if (!grid) return;
+    const filtered = _shopFilter === 'all' ? SHOP_PRODUCTS : SHOP_PRODUCTS.filter(p => p.cat === _shopFilter);
+    grid.innerHTML = filtered.map(p => `
+      <div class="shop-card">
+        <div class="shop-thumb">
+          <img src="${p.img}" alt="${p.name}" loading="lazy" />
+          ${p.badge ? `<span class="shop-badge ${p.badgeCls}">${p.badge}</span>` : ''}
+        </div>
+        <div class="shop-body">
+          <div class="shop-category">${{plan:'Tréninkové plány',test:'Testy & analýzy',voucher:'Dárkové poukazy',merch:'Merch'}[p.cat]}</div>
+          <h3>${p.name}</h3>
+          <p>${p.desc}</p>
+          <div class="shop-footer">
+            <div class="shop-price">${p.price}${p.oldPrice ? `<span class="old-price">${p.oldPrice}</span>` : ''}</div>
+            <button class="shop-btn" onclick="addToCart(${p.id})">Do košíku 🛒</button>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  function filterShop(cat, btn) {
+    document.querySelectorAll('.shop-filter-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderShop(cat);
+  }
+
+  function addToCart(id) {
+    const p = SHOP_PRODUCTS.find(x => x.id === id);
+    if (!p) return;
+    const btn = event.target;
+    btn.textContent = '✓ Přidáno!';
+    btn.style.background = 'var(--green-deep)';
+    setTimeout(() => { btn.textContent = 'Do košíku 🛒'; btn.style.background = ''; }, 2200);
+    // In production: integrate with payment gateway (ComGate / Stripe)
+    console.log('Cart:', p.name, p.price);
+  }
+
+  function getContent() {
+    const s = localStorage.getItem('dv_content');
+    return s ? JSON.parse(s) : JSON.parse(JSON.stringify(DEFAULT_CONTENT));
+  }
+  function saveContent(c) { localStorage.setItem('dv_content', JSON.stringify(c)); }
+
+  function renderPage() {
+    const c = getContent();
+    const ht = document.getElementById('hero-title');
+    const hd = document.getElementById('hero-desc');
+    if (ht) ht.textContent = c.hero.title;
+    if (hd) hd.textContent = c.hero.desc;
+    const sg = document.getElementById('services-grid');
+    if (sg) sg.innerHTML = c.services.map(s => `
+      <div class="service-card">
+        <div class="service-icon">${s.icon}</div>
+        <h3>${s.name}</h3>
+        <p>${s.desc}</p>
+        <div class="price">${s.price}</div>
+        <a href="#kontakt" style="color:var(--green);font-weight:700;font-size:14px;margin-top:4px;display:inline-flex;align-items:center;gap:4px">Zjistit více →</a>
+      </div>`).join('');
+    const pg = document.getElementById('posts-grid');
+    if (pg) pg.innerHTML = c.posts.map(p => `
+      <div class="post-card">
+        <img class="post-thumb" src="${p.img}" alt="${p.title}" />
+        <div class="post-body">
+          <div class="post-meta">${p.meta}</div>
+          <h3>${p.title}</h3>
+          <p>${p.excerpt}</p>
+          <a href="#blog" class="post-link">Číst více &rarr;</a>
+        </div>
+      </div>`).join('');
+    renderPlanTable(c.plan);
+  }
+
+  function zoneLabel(z) {
+    return { z1:'Z1', z2:'Z2', z3:'Z3', z4:'Z4', sila:'Síla', rest:'Volno' }[z] || z;
+  }
+
+  function renderPlanTable(plan) {
+    const container = document.getElementById('plan-table-container');
+    if (!container) return;
+    container.innerHTML = `<table class="plan-table">
+      <thead><tr><th>Den</th><th>Trénink</th><th>Zóna</th><th>Vzdálenost</th><th>&#9989;</th></tr></thead>
+      <tbody>${plan.map((r, i) => `
+        <tr${r.today ? ' class="today-row"' : ''}>
+          <td>${r.today ? '<strong>' + r.day + '</strong>' : r.day}</td>
+          <td>${r.today ? '<strong>' + r.name + '</strong>' : r.name}<div class="plan-note">${r.note}</div></td>
+          <td><span class="zt zt-${r.zone}">${zoneLabel(r.zone)}</span></td>
+          <td>${r.dist}</td>
+          <td><span class="plan-check" data-idx="${i}" onclick="toggleDone(this)">${r.done ? '✅' : '⬜'}</span></td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  }
+
+  // ── ADMIN PANEL ─────────────────────────────────
+  function switchAdminTab(name, el) {
+    document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.atab').forEach(b => b.classList.remove('active'));
+    document.getElementById('asec-' + name).classList.add('active');
+    el.classList.add('active');
+    if (name === 'hero') fillHeroForm();
+    if (name === 'sluzby') fillServicesForm();
+    if (name === 'blog') fillPostsForm();
+    if (name === 'plan') fillPlanForm();
+  }
+
+  function showOk(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = 'inline';
+    setTimeout(() => { el.style.display = 'none'; }, 2500);
+  }
+
+  function fillHeroForm() {
+    const c = getContent();
+    document.getElementById('a-hero-title').value = c.hero.title;
+    document.getElementById('a-hero-desc').value = c.hero.desc;
+  }
+  function saveHero() {
+    const c = getContent();
+    c.hero.title = document.getElementById('a-hero-title').value.trim() || c.hero.title;
+    c.hero.desc = document.getElementById('a-hero-desc').value.trim() || c.hero.desc;
+    saveContent(c); renderPage(); showOk('ok-hero');
+  }
+
+  function fillServicesForm() {
+    const c = getContent();
+    document.getElementById('admin-services-list').innerHTML = c.services.map((s, i) => `
+      <div class="admin-item">
+        <div class="admin-item-head">
+          <span class="admin-item-title">${s.name}</span>
+          <button class="del-btn" onclick="deleteService(${i})">Smazat</button>
+        </div>
+        <div class="admin-grid-2" style="margin-bottom:10px">
+          <div class="form-group sm"><label>Ikona (emoji)</label><input type="text" id="si-icon-${i}" value="${s.icon}" maxlength="4" /></div>
+          <div class="form-group sm"><label>Název</label><input type="text" id="si-name-${i}" value="${s.name}" /></div>
+        </div>
+        <div class="form-group sm"><label>Cena</label><input type="text" id="si-price-${i}" value="${s.price}" /></div>
+        <div class="form-group sm"><label>Popis</label><textarea id="si-desc-${i}" style="min-height:70px">${s.desc}</textarea></div>
+      </div>`).join('');
+  }
+  function deleteService(i) {
+    const c = getContent(); c.services.splice(i, 1); saveContent(c); fillServicesForm(); renderPage();
+  }
+  function addService() {
+    const c = getContent();
+    c.services.push({ icon: '🏃', name: 'Nová služba', desc: 'Popis služby...', price: 'od 0 Kč' });
+    saveContent(c); fillServicesForm(); renderPage();
+    document.getElementById('admin-services-list').lastElementChild?.scrollIntoView({ behavior: 'smooth' });
+  }
+  function saveServices() {
+    const c = getContent();
+    c.services = c.services.map((s, i) => ({
+      icon: document.getElementById(`si-icon-${i}`)?.value || s.icon,
+      name: document.getElementById(`si-name-${i}`)?.value || s.name,
+      price: document.getElementById(`si-price-${i}`)?.value || s.price,
+      desc: document.getElementById(`si-desc-${i}`)?.value || s.desc
+    }));
+    saveContent(c); renderPage(); showOk('ok-sluzby');
+  }
+
+  function fillPostsForm() {
+    const c = getContent();
+    document.getElementById('admin-posts-list').innerHTML = c.posts.map((p, i) => `
+      <div class="admin-item">
+        <div class="admin-item-head">
+          <span class="admin-item-title">${p.title}</span>
+          <button class="del-btn" onclick="deletePost(${i})">Smazat</button>
+        </div>
+        <div class="form-group sm"><label>Nadpis článku</label><input type="text" id="pi-title-${i}" value="${p.title.replace(/"/g,'&quot;')}" /></div>
+        <div class="admin-grid-2" style="margin-bottom:6px">
+          <div class="form-group sm"><label>Datum &amp; kategorie</label><input type="text" id="pi-meta-${i}" value="${p.meta}" /></div>
+          <div class="form-group sm"><label>URL fotky</label><input type="url" id="pi-img-${i}" value="${p.img}" onchange="document.getElementById('pi-prev-${i}').src=this.value" /></div>
+        </div>
+        <img id="pi-prev-${i}" class="img-preview-thumb" src="${p.img}" />
+        <div class="form-group sm" style="margin-top:10px"><label>Perex (krátký popis)</label><textarea id="pi-excerpt-${i}" style="min-height:70px">${p.excerpt}</textarea></div>
+      </div>`).join('');
+  }
+  function deletePost(i) {
+    const c = getContent(); c.posts.splice(i, 1); saveContent(c); fillPostsForm(); renderPage();
+  }
+  function addPost() {
+    const c = getContent();
+    c.posts.unshift({ img: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600&q=80', meta: '7. března 2026 · Trénink', title: 'Nový článek', excerpt: 'Popis článku...' });
+    saveContent(c); fillPostsForm(); renderPage();
+  }
+  function savePosts() {
+    const c = getContent();
+    c.posts = c.posts.map((p, i) => ({
+      title: document.getElementById(`pi-title-${i}`)?.value || p.title,
+      meta: document.getElementById(`pi-meta-${i}`)?.value || p.meta,
+      img: document.getElementById(`pi-img-${i}`)?.value || p.img,
+      excerpt: document.getElementById(`pi-excerpt-${i}`)?.value || p.excerpt
+    }));
+    saveContent(c); renderPage(); showOk('ok-blog');
+  }
+
+  const ZONES = ['z1','z2','z3','z4','sila','rest'];
+  function fillPlanForm() {
+    const c = getContent();
+    document.getElementById('admin-plan-list').innerHTML = c.plan.map((r, i) => `
+      <div class="admin-item">
+        <div class="admin-item-head">
+          <span class="admin-item-title">${r.day} – ${r.name}</span>
+          <button class="del-btn" onclick="deletePlanRow(${i})">Smazat</button>
+        </div>
+        <div class="admin-grid-2" style="margin-bottom:10px">
+          <div class="form-group sm"><label>Den</label><input type="text" id="pl-day-${i}" value="${r.day}" /></div>
+          <div class="form-group sm"><label>Název tréninku</label><input type="text" id="pl-name-${i}" value="${r.name.replace(/"/g,'&quot;')}" /></div>
+        </div>
+        <div class="admin-grid-2">
+          <div class="form-group sm"><label>Poznámka</label><input type="text" id="pl-note-${i}" value="${r.note.replace(/"/g,'&quot;')}" /></div>
+          <div class="form-group sm"><label>Vzdálenost / čas</label><input type="text" id="pl-dist-${i}" value="${r.dist}" /></div>
+        </div>
+        <div class="admin-grid-2">
+          <div class="form-group sm"><label>Zóna</label>
+            <select id="pl-zone-${i}">${ZONES.map(z => `<option value="${z}"${r.zone===z?' selected':''}>${zoneLabel(z)}</option>`).join('')}</select>
+          </div>
+          <div class="form-group sm" style="display:flex;align-items:center;gap:10px;padding-top:22px">
+            <input type="checkbox" id="pl-today-${i}"${r.today?' checked':''} />
+            <label for="pl-today-${i}" style="font-weight:600;font-size:14px">Dnešní trénink</label>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+  function deletePlanRow(i) {
+    const c = getContent(); c.plan.splice(i, 1); saveContent(c); fillPlanForm(); renderPlanTable(c.plan);
+  }
+  function addPlanRow() {
+    const c = getContent();
+    const d = new Date();
+    c.plan.push({ day: `Po ${d.getDate()}.${d.getMonth()+1}.`, name: 'Nový trénink', note: '', zone: 'z2', dist: '10 km', done: false });
+    saveContent(c); fillPlanForm(); renderPlanTable(c.plan);
+    document.getElementById('admin-plan-list').lastElementChild?.scrollIntoView({ behavior: 'smooth' });
+  }
+  function savePlan() {
+    const c = getContent();
+    c.plan = c.plan.map((r, i) => ({
+      day: document.getElementById(`pl-day-${i}`)?.value || r.day,
+      name: document.getElementById(`pl-name-${i}`)?.value || r.name,
+      note: document.getElementById(`pl-note-${i}`)?.value || r.note,
+      dist: document.getElementById(`pl-dist-${i}`)?.value || r.dist,
+      zone: document.getElementById(`pl-zone-${i}`)?.value || r.zone,
+      today: document.getElementById(`pl-today-${i}`)?.checked || false,
+      done: r.done
+    }));
+    saveContent(c); renderPlanTable(c.plan); showOk('ok-plan');
+  }
+  function resetContent() {
+    if (!confirm('Opravdu resetovat veškerý obsah webu na výchozí hodnoty?')) return;
+    localStorage.removeItem('dv_content');
+    renderPage();
+    alert('Hotovo – obsah byl resetován.');
+  }
+
+  // ── NAV ─────────────────────────────────────────
+  function renderNav() {
+    const user = Auth.current();
+    const loginBtn = document.getElementById('nav-login-btn');
+    const navUser = document.getElementById('nav-user');
+    if (user) {
+      loginBtn.style.display = 'none';
+      navUser.classList.add('visible');
+      document.getElementById('nav-av').textContent = user.name.charAt(0).toUpperCase();
+      document.getElementById('nav-uname').textContent = user.name.split(' ')[0];
+    } else {
+      loginBtn.style.display = '';
+      navUser.classList.remove('visible');
+    }
+  }
+
+  // ── MODALS ──────────────────────────────────────
+  function openLogin() {
+    document.getElementById('modal-login').classList.add('open');
+    document.getElementById('login-error').classList.remove('show');
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-pass').value = '';
+    setTimeout(() => document.getElementById('login-email').focus(), 100);
+  }
+
+  function openRegister(tier) {
+    document.getElementById('modal-register').classList.add('open');
+    document.getElementById('reg-error').classList.remove('show');
+    if (tier) document.getElementById('reg-tier').value = tier;
+    setTimeout(() => document.getElementById('reg-name').focus(), 100);
+  }
+
+  function closeModals() {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+  }
+
+  function switchToRegister() { closeModals(); openRegister(); }
+  function switchToLogin() { closeModals(); openLogin(); }
+
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeModals(); });
+  });
+
+  function doLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const pass = document.getElementById('login-pass').value;
+    const result = Auth.login(email, pass);
+    if (!result.ok) { document.getElementById('login-error').classList.add('show'); return; }
+    closeModals();
+    renderNav();
+    openDashboard();
+  }
+
+  function doRegister() {
+    const name = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const pass = document.getElementById('reg-pass').value;
+    const tier = document.getElementById('reg-tier').value;
+    const errEl = document.getElementById('reg-error');
+    if (!name) { errEl.textContent = 'Zadejte jméno.'; errEl.classList.add('show'); return; }
+    if (!email || !email.includes('@')) { errEl.textContent = 'Zadejte platný e-mail.'; errEl.classList.add('show'); return; }
+    if (pass.length < 6) { errEl.textContent = 'Heslo musí mít alespoň 6 znaků.'; errEl.classList.add('show'); return; }
+    const result = Auth.register(name, email, pass, tier);
+    if (!result.ok) { errEl.textContent = result.msg; errEl.classList.add('show'); return; }
+    closeModals();
+    renderNav();
+    openDashboard();
+  }
+
+  function doLogout() {
+    Auth.logout();
+    closeDashboard();
+    renderNav();
+  }
+
+  // ── DASHBOARD ───────────────────────────────────
+  function openDashboard() {
+    const user = Auth.current();
+    if (!user) { openLogin(); return; }
+    document.getElementById('dash-av').textContent = user.name.charAt(0).toUpperCase();
+    document.getElementById('dash-uname').textContent = user.name;
+    document.getElementById('dash-tier-lbl').textContent = TIERS[user.tier] || user.tier;
+    document.getElementById('prof-big-av').textContent = user.name.charAt(0).toUpperCase();
+    document.getElementById('prof-name').textContent = user.name;
+    document.getElementById('prof-email').textContent = user.email;
+    document.getElementById('prof-tier-val').textContent = TIERS[user.tier] || user.tier;
+    document.getElementById('prof-edit-name').value = user.name;
+    document.getElementById('prof-edit-email').value = user.email;
+    if (user.goal) document.getElementById('prof-edit-goal').value = user.goal;
+    document.getElementById('feed-composer-av').textContent = user.name.charAt(0).toUpperCase();
+    renderVideos(user.tier);
+    renderFeed();
+    checkPlanAccess(user.tier);
+    renderPlanTable(getContent().plan);
+    const adminNavItem = document.getElementById('admin-nav-item');
+    if (adminNavItem) adminNavItem.style.display = user.isAdmin ? '' : 'none';
+    document.getElementById('dashboard').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    switchTab('prehled', document.querySelector('.dash-nav-item'));
+  }
+
+  function closeDashboard() {
+    document.getElementById('dashboard').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function switchTab(name, el) {
+    document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.dash-nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    if (el) el.classList.add('active');
+  }
+
+  // ── VIDEOS ──────────────────────────────────────
+  const VIDEOS = [
+    { title: 'Správná technika běhu', meta: '18 min · Technika', thumb: 'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&q=60', tier: 'zakladni' },
+    { title: 'Tréninkové zóny a jak je používat', meta: '24 min · Trénink', thumb: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=400&q=60', tier: 'aktivni' },
+    { title: 'Síla pro běžce – kompletní program', meta: '32 min · Síla', thumb: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&q=60', tier: 'aktivni' },
+    { title: 'Výživa před závodem a po závodě', meta: '20 min · Výživa', thumb: 'https://images.unsplash.com/photo-1502904550040-7534597429ae?w=400&q=60', tier: 'aktivni' },
+    { title: 'Analýza závodního tempa', meta: '28 min · Závody', thumb: 'https://images.unsplash.com/photo-1538805060514-97d9cc17730c?w=400&q=60', tier: 'pro' },
+    { title: 'Keňský tábor – zápisky a videa', meta: '45 min · Exkluzivní', thumb: 'https://images.unsplash.com/photo-1519311965067-36d3e5f33d39?w=400&q=60', tier: 'pro' },
+  ];
+
+  function renderVideos(userTier) {
+    const grid = document.getElementById('vid-grid');
+    grid.innerHTML = VIDEOS.map(v => {
+      const locked = TIER_ORDER.indexOf(userTier) < TIER_ORDER.indexOf(v.tier);
+      const badge = v.tier !== 'zakladni' ? `<span class="tier-pill ${v.tier}">${TIERS[v.tier]}</span>` : '';
+      return `<div class="vid-card">
+        <div class="vid-thumb">
+          <img src="${v.thumb}" alt="${v.title}" />
+          ${locked
+            ? `<div class="vid-lock"><div class="vid-lock-icon">&#128274;</div><div class="vid-lock-text">Dostupné v plánu ${TIERS[v.tier]}</div></div>`
+            : `<div class="vid-play"><div class="vid-play-btn">&#9654;</div></div>`}
+        </div>
+        <div class="vid-body"><h4>${v.title}${badge}</h4><div class="vm">${v.meta}</div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── PLAN ACCESS ─────────────────────────────────
+  function checkPlanAccess(tier) {
+    const tab = document.getElementById('tab-plan');
+    const old = tab.querySelector('.plan-lock-msg');
+    if (old) old.remove();
+    const table = tab.querySelector('table');
+    if (tier === 'zakladni') {
+      const msg = document.createElement('div');
+      msg.className = 'plan-lock-msg';
+      msg.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:18px 22px;margin-bottom:20px;font-size:14px;color:#856404;display:flex;align-items:center;gap:12px;';
+      msg.innerHTML = '<span style="font-size:22px">&#128274;</span><div><strong>Plánování je dostupné pro placené plány.</strong><br>Upgradujte na Aktivní nebo Pro. <span style="color:var(--green-deep);cursor:pointer;font-weight:700" onclick="openUpgrade()">Upgradovat nyní &rarr;</span></div>';
+      tab.insertBefore(msg, table);
+      table.style.filter = 'blur(4px)';
+      table.style.pointerEvents = 'none';
+    } else {
+      table.style.filter = '';
+      table.style.pointerEvents = '';
+    }
+  }
+
+  // ── FEED ────────────────────────────────────────
+  const SEED_FEED = [
+    { name: 'Martin H.', text: 'Dneska jsem zdolal 25 km dlouhý běh! Tempo 5:20/km, cítil jsem se skvěle.', time: 'Dnes 7:42' },
+    { name: 'Kateřina M.', text: 'Otázka pro všechny – co jíte před ranním tréninkem? Mám problém s prázdným žaludkem...', time: 'Včera 19:15' },
+    { name: 'Lucie P.', text: 'Právě jsem se přihlásila na Pražský maraton! Teď se teprve bojím, ale věřím plánu!', time: 'Včera 14:30' },
+  ];
+
+  function renderFeed() {
+    const list = document.getElementById('feed-list');
+    const stored = JSON.parse(localStorage.getItem('dv_feed') || '[]');
+    const all = [...stored, ...SEED_FEED];
+    list.innerHTML = all.map(m => `<div class="feed-item">
+      <div class="feed-av">${m.name.charAt(0)}</div>
+      <div style="flex:1">
+        <div><span class="feed-author">${m.name}</span><span class="feed-ts">${m.time}</span></div>
+        <div class="feed-text">${m.text}</div>
+      </div>
+    </div>`).join('');
+  }
+
+  function postFeed() {
+    const user = Auth.current();
+    const input = document.getElementById('feed-input');
+    const text = input.value.trim();
+    if (!text) return;
+    const stored = JSON.parse(localStorage.getItem('dv_feed') || '[]');
+    const now = new Date();
+    stored.unshift({ name: user.name, text, time: `Dnes ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}` });
+    localStorage.setItem('dv_feed', JSON.stringify(stored));
+    input.value = '';
+    renderFeed();
+  }
+
+  // ── PLAN TOGGLE ─────────────────────────────────
+  function toggleDone(el) {
+    const idx = parseInt(el.dataset.idx);
+    const c = getContent();
+    if (!isNaN(idx) && c.plan[idx]) {
+      c.plan[idx].done = !c.plan[idx].done;
+      saveContent(c);
+      el.textContent = c.plan[idx].done ? '✅' : '⬜';
+    } else {
+      el.textContent = el.textContent.trim() === '✅' ? '⬜' : '✅';
+    }
+  }
+
+  // ── PROFILE SAVE ────────────────────────────────
+  function saveProfile() {
+    const name = document.getElementById('prof-edit-name').value.trim();
+    const email = document.getElementById('prof-edit-email').value.trim();
+    const pass = document.getElementById('prof-edit-pass').value;
+    const goal = document.getElementById('prof-edit-goal').value;
+    if (!name || !email) return;
+    const updates = { name, email, goal };
+    if (pass.length >= 6) updates.password = pass;
+    const updated = Auth.updateUser(updates);
+    if (!updated) return;
+    document.getElementById('dash-av').textContent = updated.name.charAt(0).toUpperCase();
+    document.getElementById('dash-uname').textContent = updated.name;
+    document.getElementById('prof-big-av').textContent = updated.name.charAt(0).toUpperCase();
+    document.getElementById('prof-name').textContent = updated.name;
+    document.getElementById('prof-email').textContent = updated.email;
+    document.getElementById('nav-av').textContent = updated.name.charAt(0).toUpperCase();
+    document.getElementById('nav-uname').textContent = updated.name.split(' ')[0];
+    const msg = document.getElementById('prof-save-msg');
+    msg.style.display = 'inline';
+    setTimeout(() => { msg.style.display = 'none'; }, 3000);
+  }
+
+  // ── UPGRADE ─────────────────────────────────────
+  let selectedUpgradeTier = null;
+
+  function openUpgrade() {
+    const user = Auth.current();
+    if (!user) return;
+    selectedUpgradeTier = user.tier;
+    document.querySelectorAll('.upgrade-tier').forEach((el, i) => {
+      el.classList.toggle('selected', TIER_ORDER[i] === user.tier);
+    });
+    document.getElementById('modal-upgrade').classList.add('open');
+  }
+
+  function selectUpgradeTier(tier, el) {
+    selectedUpgradeTier = tier;
+    document.querySelectorAll('.upgrade-tier').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function doUpgrade() {
+    if (!selectedUpgradeTier) return;
+    const updated = Auth.updateUser({ tier: selectedUpgradeTier });
+    if (!updated) return;
+    document.getElementById('dash-tier-lbl').textContent = TIERS[updated.tier];
+    document.getElementById('prof-tier-val').textContent = TIERS[updated.tier];
+    renderVideos(updated.tier);
+    checkPlanAccess(updated.tier);
+    closeModals();
+  }
+
+  // ── NAV USER DROPDOWN ───────────────────────────
+  function toggleNavUser(e) {
+    e.stopPropagation();
+    document.getElementById('nav-user-dd').classList.toggle('open');
+  }
+  document.addEventListener('click', () => {
+    const dd = document.getElementById('nav-user-dd');
+    if (dd) dd.classList.remove('open');
+  });
+
+  // ── INIT ────────────────────────────────────────
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModals(); });
+  renderNav();
+  renderPage();
+  renderShop('all');
+  if (window.location.hash === '#dashboard' && Auth.current()) openDashboard();
+</script>
+</body>
+</html>

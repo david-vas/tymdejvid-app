@@ -2,36 +2,49 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Pomocná funkce – je uživatel přihlášen?
     function isAuth() {
       return request.auth != null;
     }
 
-    // Pomocná funkce – je uživatel trenér?
     function isCoach() {
       return isAuth() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'coach';
     }
 
-    // ── Users ──────────────────────────────────────────────────────────
-    match /users/{userId} {
-      // Každý přihlášený uživatel čte svůj vlastní profil;
-      // trenér čte všechny profily
-      allow read: if isAuth() && (request.auth.uid == userId || isCoach());
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
 
-      // Uživatel může editovat jen svůj vlastní profil;
-      // trenér může editovat kohokoliv (kredity, docházka)
-      allow write: if isAuth() && (request.auth.uid == userId || isCoach());
+    // ── Users ──────────────────────────────────────────────────────────
+    // Všichni přihlášení čtou všechny profily (žebříček, docházka, admin)
+    // Každý uživatel píše jen svůj profil; trenér píše kohokoliv
+    match /users/{userId} {
+      allow read:   if isAuth();
+      allow create: if isAuth();                    // registrace nového účtu
+      allow update: if isOwner(userId) || isCoach();
+      allow delete: if isCoach();
     }
 
     // ── Training config (patches / extras / deletes) ───────────────────
     match /config/{docId} {
-      // Čtou všichni přihlášení, píší jen trenéři
-      allow read: if isAuth();
+      allow read:  if isAuth();
       allow write: if isCoach();
     }
 
-    // ── Ostatní kolekce (budoucí rozšíření) ────────────────────────────
+    // ── News / Novinky ─────────────────────────────────────────────────
+    match /news/{newsId} {
+      allow read:                    if isAuth();
+      allow create, update, delete:  if isCoach();
+    }
+
+    // ── FCM tokeny ─────────────────────────────────────────────────────
+    // Každý uživatel čte/píše jen svůj token; trenér čte všechny (pro broadcast)
+    match /fcmTokens/{userId} {
+      allow read:  if isOwner(userId) || isCoach();
+      allow write: if isOwner(userId);
+    }
+
+    // ── Fallback – vše ostatní zakázáno ───────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }

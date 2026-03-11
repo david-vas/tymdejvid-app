@@ -7,9 +7,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <!-- Firebase compat SDK (single-file PWA – no bundler) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -1692,6 +1693,17 @@ const FIREBASE_CFG = {
 firebase.initializeApp(FIREBASE_CFG);
 const db   = firebase.firestore();
 const auth = firebase.auth();
+
+// FCM – push notifikace
+// VAPID klíč: Firebase Console → Project Settings → Cloud Messaging → Web Push certificates
+const FCM_VAPID_KEY = 'DOPLŇ_VAPID_KLÍČ_Z_FIREBASE_KONZOLE';
+let _messaging = null;
+try {
+  _messaging = firebase.messaging();
+} catch(e) {
+  // Prohlížeč nepodporuje FCM (Safari bez PWA, HTTP, …)
+}
+
 // Offline podpora (data dostupná i bez internetu)
 db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
 
@@ -4592,17 +4604,58 @@ const MUNAKU_RACE = {
 /* ══════════════════════════════════════════════════════════════════
    NEWS / NOVINKY
    ══════════════════════════════════════════════════════════════════ */
-let _news = [];   // { id, title, body, createdAt, authorName }
+let _news = [];             // { id, title, body, createdAt, authorName }
+let _newsUnsubscribe = null; // Firestore real-time listener handle
 
-/** Load news from Firestore, update dot */
-async function loadNews() {
+/**
+ * Load news once + start real-time listener.
+ * When coach posts a new item, the dot appears on all open apps immediately.
+ */
+function loadNews() {
+  if (_newsUnsubscribe) _newsUnsubscribe(); // reset existing listener
+  _newsUnsubscribe = db.collection('news')
+    .orderBy('createdAt', 'desc')
+    .limit(50)
+    .onSnapshot(
+      (snap) => {
+        _news = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        updateNewsDot();
+        // If panel is open, re-render it live
+        if (document.getElementById('news-panel').classList.contains('open')) {
+          renderNewsPanel();
+        }
+      },
+      () => { /* silently ignore permission errors before login */ }
+    );
+}
+
+/**
+ * Initialize Firebase Cloud Messaging:
+ * 1. Register service worker
+ * 2. Ask user permission for notifications (non-intrusively, after login)
+ * 3. Store FCM token in Firestore under fcmTokens/{userId}
+ */
+async function initFCM(userId) {
+  if (!_messaging || !('serviceWorker' in navigator)) return;
+  if (FCM_VAPID_KEY === 'DOPLŇ_VAPID_KLÍČ_Z_FIREBASE_KONZOLE') return; // klíč ještě nebyl nastaven
+
   try {
-    const snap = await db.collection('news').orderBy('createdAt', 'desc').limit(50).get();
-    _news = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Zaregistruj service worker
+    const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+
+    // Získej permission (nezobrazuje se automaticky – prohlížeč si to řídí sám)
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+
+    // Získej FCM token
+    const token = await _messaging.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: swReg });
+    if (!token) return;
+
+    // Ulož token do Firestore (přepíše stávající pro daného uživatele)
+    await db.collection('fcmTokens').doc(userId).set({ token, updatedAt: new Date().toISOString() });
   } catch(e) {
-    _news = [];
+    console.warn('FCM init error:', e.message);
   }
-  updateNewsDot();
 }
 
 /** Show/hide red dot based on unread news */
@@ -4749,7 +4802,8 @@ async function loginSuccess(user) {
   document.getElementById('admin-menu').style.display = user.role === 'coach' ? 'flex' : 'none';
   navigate('dashboard');
   tryLoadNotion();
-  loadNews();   // načti novinky a zobraz tečku pokud jsou nové
+  loadNews();        // real-time listener na novinky + tečka
+  initFCM(user.id);  // požádej o povolení push notifikací, ulož token
   showToast(`Vítej, ${user.name.split(' ')[0]}! 👋`, 'success');
 }
 
