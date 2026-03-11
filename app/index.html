@@ -86,6 +86,20 @@
     .form-error { color: #ef4444; font-size: 13px; margin-top: 8px; display: none; }
     .form-error.show { display: block; }
 
+    /* ── PENDING / REJECTED SCREEN ──────────────────── */
+    #screen-pending {
+      min-height: 100vh; display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #0f172a 0%, #16a34a 100%);
+      padding: 24px;
+    }
+    .pending-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 18px; height: 18px; padding: 0 5px;
+      background: #ef4444; color: white; font-size: 10px; font-weight: 800;
+      border-radius: 10px; margin-left: 4px; vertical-align: middle;
+    }
+
     /* ── APP LAYOUT ──────────────────────────────────── */
     #app {
       max-width: 480px; margin: 0 auto;
@@ -745,6 +759,21 @@
   </div>
 </div>
 
+<!-- ════ PENDING SCREEN ═════════════════════════════════════════════ -->
+<div id="screen-pending">
+  <div class="login-card" style="text-align:center">
+    <div style="font-size:52px;margin-bottom:16px">⏳</div>
+    <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:22px;color:#0f172a;margin-bottom:10px">Čekáš na schválení</div>
+    <div style="font-size:14px;color:var(--text-light);line-height:1.7;margin-bottom:24px">
+      Tvůj účet byl úspěšně vytvořen.<br>
+      Trenér tě musí schválit — ozve se ti.<br>
+      <span style="font-size:12px">Po schválení se přihlas znovu.</span>
+    </div>
+    <button class="btn btn-green btn-full" onclick="location.reload()">🔄 Zkontrolovat stav</button>
+    <button class="btn btn-full" style="margin-top:10px;background:var(--bg);color:var(--text-light)" onclick="doLogout()">Odhlásit se</button>
+  </div>
+</div>
+
 <!-- ════ APP ══════════════════════════════════════════════════════════ -->
 <div id="app" class="hidden">
 
@@ -941,7 +970,7 @@
     <div class="admin-tabs">
       <div class="admin-tab active" id="admin-tab-att" onclick="switchAdminTab('attendance')">📋 Docházka</div>
       <div class="admin-tab"        id="admin-tab-trn" onclick="switchAdminTab('trainings')">📅 Tréninky</div>
-      <div class="admin-tab"        id="admin-tab-run" onclick="switchAdminTab('runners')">👤 Běžci</div>
+      <div class="admin-tab"        id="admin-tab-run" onclick="switchAdminTab('runners')">👤 Běžci<span id="pending-badge" class="pending-badge" style="display:none">0</span></div>
       <div class="admin-tab"        id="admin-tab-fin" onclick="switchAdminTab('finance')">💰 Finance</div>
     </div>
 
@@ -1662,7 +1691,7 @@ async function doRegister() {
     const cred   = await auth.createUserWithEmailAndPassword(email, pass);
     const newUser = {
       name, email,
-      role: 'member',
+      role: 'pending',
       gender,
       phone:          phone || '',
       joinDate:       new Date().toISOString().slice(0,10),
@@ -1690,8 +1719,9 @@ async function doLogout() {
   STATE.attendance    = {};
   STATE.registrations = {};
   _usersCache         = null;
-  document.getElementById('admin-menu').style.display = 'none';
+  document.getElementById('admin-menu').style.display   = 'none';
   document.getElementById('app').classList.add('hidden');
+  document.getElementById('screen-pending').style.display = 'none';
   await auth.signOut();
   // onAuthStateChanged s null zobrazí login screen
 }
@@ -3558,25 +3588,95 @@ function coachToggleAttFromDetail(trainingId, userId) {
 function renderAdminRunners() {
   const el = document.getElementById('admin-runners-list');
   if (!el) return;
-  const users = getAllUsers().sort((a,b) => a.name.localeCompare(b.name, 'cs'));
-  if (!users.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">👤</div><p>Žádní běžci</p></div>';
-    return;
+  const allUsers = getAllUsers().sort((a,b) => a.name.localeCompare(b.name, 'cs'));
+
+  const pending = allUsers.filter(u => u.role === 'pending');
+  const active  = allUsers.filter(u => u.role !== 'pending' && u.role !== 'rejected');
+
+  // Badge na tabu
+  const badge = document.getElementById('pending-badge');
+  if (badge) {
+    badge.textContent = pending.length;
+    badge.style.display = pending.length ? 'inline-flex' : 'none';
   }
-  el.innerHTML = `<div class="card"><div class="card-body" style="padding:8px 16px">
-    ${users.map(u => `
-      <div class="admin-list-item">
-        <div class="avatar-mini" style="width:34px;height:34px;font-size:13px;flex-shrink:0">${getInitials(u.name)}</div>
-        <div class="admin-list-info">
-          <div class="admin-list-name">${u.name}${u.role==='coach' ? ' <span class="admin-badge">TRENÉR</span>' : ''}${membershipBadgesHtml(membershipCompletedYears(u.joinDate)) ? ' ' + membershipBadgesHtml(membershipCompletedYears(u.joinDate)) : ''}</div>
-          <div class="admin-list-sub">${u.email}${u.phone ? ' · 📞 ' + u.phone : ''}${u.joinDate ? ' · Člen od ' + fmtDate(u.joinDate) + (membershipDurationText(u.joinDate) ? ' (' + membershipDurationText(u.joinDate) + ')' : '') : ''}</div>
-        </div>
-        <div class="admin-list-actions">
-          <button class="btn btn-outline btn-sm" onclick="openRunnerDetail('${u.id}')" style="margin-right:4px">👁</button>
-          <button class="btn btn-outline btn-sm" onclick="openRunnerModal('${u.id}')">✎</button>
-        </div>
-      </div>`).join('')}
-  </div></div>`;
+
+  let html = '';
+
+  // ── Sekce čekajících na schválení ─────────────────────
+  if (pending.length) {
+    html += `
+    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#b45309;margin-bottom:8px">
+      ⏳ Čeká na schválení (${pending.length})
+    </div>
+    <div class="card" style="margin-bottom:16px;border:2px solid #fbbf24">
+      <div class="card-body" style="padding:8px 16px">
+        ${pending.map(u => `
+          <div class="admin-list-item">
+            <div class="avatar-mini" style="width:34px;height:34px;font-size:13px;flex-shrink:0;background:#fef3c7;color:#b45309">${getInitials(u.name)}</div>
+            <div class="admin-list-info">
+              <div class="admin-list-name">${u.name}</div>
+              <div class="admin-list-sub">${u.email}${u.phone ? ' · 📞 ' + u.phone : ''} · Registrace ${fmtDate(u.joinDate || '')}</div>
+            </div>
+            <div class="admin-list-actions" style="gap:6px">
+              <button class="btn btn-green btn-sm" onclick="approveRunner('${u.id}')">✓ Schválit</button>
+              <button class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;border:none" onclick="rejectRunner('${u.id}')">✗</button>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  // ── Aktivní členové ───────────────────────────────────
+  if (active.length) {
+    html += `
+    <div class="card"><div class="card-body" style="padding:8px 16px">
+      ${active.map(u => `
+        <div class="admin-list-item">
+          <div class="avatar-mini" style="width:34px;height:34px;font-size:13px;flex-shrink:0">${getInitials(u.name)}</div>
+          <div class="admin-list-info">
+            <div class="admin-list-name">${u.name}${u.role==='coach' ? ' <span class="admin-badge">TRENÉR</span>' : ''}${membershipBadgesHtml(membershipCompletedYears(u.joinDate)) ? ' ' + membershipBadgesHtml(membershipCompletedYears(u.joinDate)) : ''}</div>
+            <div class="admin-list-sub">${u.email}${u.phone ? ' · 📞 ' + u.phone : ''}${u.joinDate ? ' · Člen od ' + fmtDate(u.joinDate) + (membershipDurationText(u.joinDate) ? ' (' + membershipDurationText(u.joinDate) + ')' : '') : ''}</div>
+          </div>
+          <div class="admin-list-actions">
+            <button class="btn btn-outline btn-sm" onclick="openRunnerDetail('${u.id}')" style="margin-right:4px">👁</button>
+            <button class="btn btn-outline btn-sm" onclick="openRunnerModal('${u.id}')">✎</button>
+          </div>
+        </div>`).join('')}
+    </div></div>`;
+  }
+
+  if (!html) {
+    html = '<div class="empty-state"><div class="empty-icon">👤</div><p>Žádní běžci</p></div>';
+  }
+  el.innerHTML = html;
+}
+
+/* ── Schvalování členů ───────────────────────────────────────────── */
+async function approveRunner(userId) {
+  try {
+    await db.collection('users').doc(userId).update({ role: 'member' });
+    const idx = (_usersCache || []).findIndex(u => u.id === userId);
+    if (idx !== -1) _usersCache[idx].role = 'member';
+    showToast('Člen schválen ✓', 'success');
+    renderAdminRunners();
+  } catch(e) {
+    showToast('Chyba schválení: ' + e.message, '');
+  }
+}
+
+async function rejectRunner(userId) {
+  const user = (_usersCache || []).find(u => u.id === userId);
+  const name = user?.name || 'tohoto uživatele';
+  if (!confirm(`Zamítnout registraci uživatele ${name}?`)) return;
+  try {
+    await db.collection('users').doc(userId).update({ role: 'rejected' });
+    const idx = (_usersCache || []).findIndex(u => u.id === userId);
+    if (idx !== -1) _usersCache[idx].role = 'rejected';
+    showToast('Registrace zamítnuta', '');
+    renderAdminRunners();
+  } catch(e) {
+    showToast('Chyba: ' + e.message, '');
+  }
 }
 
 /* ── Runner modal ────────────────────────────────────────────────── */
@@ -4064,6 +4164,26 @@ auth.onAuthStateChanged(async (fbUser) => {
     await db.collection('users').doc(fbUser.uid).set(userDoc);
     if (_usersCache) _usersCache.push({ id: fbUser.uid, ...userDoc });
     userDoc = { id: fbUser.uid, ...userDoc };
+  }
+
+  // Účet čeká na schválení
+  if (userDoc.role === 'pending') {
+    document.getElementById('screen-login').style.display   = 'none';
+    document.getElementById('screen-pending').style.display = 'flex';
+    document.getElementById('app').classList.add('hidden');
+    return;
+  }
+
+  // Účet byl zamítnut
+  if (userDoc.role === 'rejected') {
+    await auth.signOut();
+    document.getElementById('screen-login').style.display   = 'flex';
+    document.getElementById('screen-pending').style.display = 'none';
+    document.getElementById('app').classList.add('hidden');
+    const errEl = document.getElementById('login-error');
+    errEl.textContent = 'Tvůj účet byl zamítnut. Kontaktuj trenéra.';
+    errEl.classList.add('show');
+    return;
   }
 
   await loginSuccess(userDoc);
