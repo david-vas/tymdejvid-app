@@ -551,6 +551,10 @@
       display: flex; gap: 10px; background: white; flex-shrink: 0;
     }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-row .form-group { min-width: 0; }
+    .input-suffix-wrap { position: relative; display: flex; align-items: center; }
+    .input-suffix-wrap input { flex: 1; padding-right: 36px !important; min-width: 0; }
+    .input-suffix { position: absolute; right: 12px; color: var(--text-light); font-size: 14px; pointer-events: none; user-select: none; }
     .form-group select, .form-group textarea {
       width: 100%; padding: 12px 16px; border: 1.5px solid var(--border);
       border-radius: var(--radius-sm); font-size: 15px; font-family: inherit;
@@ -1246,7 +1250,7 @@
     <div class="form-group"><label>Název závodu</label><input type="text" id="race-name-inp" placeholder="Prague Half Marathon" /></div>
     <div class="form-row">
       <div class="form-group"><label>Datum</label><input type="date" id="race-date-inp" /></div>
-      <div class="form-group"><label>Vzdálenost</label><input type="text" id="race-dist-inp" placeholder="21,1 km" oninput="calcRacePace()" /></div>
+      <div class="form-group"><label>Vzdálenost</label><div class="input-suffix-wrap"><input type="number" id="race-dist-inp" placeholder="21,1" step="0.1" min="0" inputmode="decimal" oninput="calcRacePace()" /><span class="input-suffix">km</span></div></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Čas</label><input type="text" id="race-time-inp" placeholder="1:45:32" oninput="calcRacePace()" /></div>
@@ -2405,7 +2409,7 @@ function openRaceEdit(id) {
   if (isNew) {
     document.getElementById('race-name-inp').value  = '';
     document.getElementById('race-date-inp').value  = '';
-    document.getElementById('race-dist-inp').value  = '';
+    document.getElementById('race-dist-inp').value  = '';   // type=number, no "km"
     document.getElementById('race-time-inp').value  = '';
     document.getElementById('race-place-inp').value = '';
     document.getElementById('race-pace-inp').value  = '';
@@ -2415,7 +2419,7 @@ function openRaceEdit(id) {
     if (!race) return;
     document.getElementById('race-name-inp').value  = race.name     || '';
     document.getElementById('race-date-inp').value  = race.date     || '';
-    document.getElementById('race-dist-inp').value  = race.distance || '';
+    document.getElementById('race-dist-inp').value  = (race.distance || '').replace(/\s*km$/i, '');
     document.getElementById('race-time-inp').value  = race.time     || '';
     document.getElementById('race-place-inp').value = race.place    || '';
     document.getElementById('race-pace-inp').value  = race.pace     || '';
@@ -2427,7 +2431,7 @@ function openRaceEdit(id) {
 function calcRacePace() {
   const distStr = document.getElementById('race-dist-inp').value.replace(',', '.');
   const timeStr = document.getElementById('race-time-inp').value.trim();
-  const dist = parseFloat(distStr);
+  const dist = parseFloat(distStr); // works for both "21.1" and "21.1 km"
   if (!dist || !timeStr) return;
   const parts = timeStr.split(':').map(Number);
   let secs = 0;
@@ -2453,7 +2457,7 @@ function saveRace() {
     id:       editingRaceId || 'race-' + Date.now(),
     name,
     date:     document.getElementById('race-date-inp').value,
-    distance: document.getElementById('race-dist-inp').value.trim(),
+    distance: (() => { const v = document.getElementById('race-dist-inp').value.trim(); return v ? v + ' km' : ''; })(),
     time:     document.getElementById('race-time-inp').value.trim(),
     place:    document.getElementById('race-place-inp').value ? parseInt(document.getElementById('race-place-inp').value) : null,
     pace:     document.getElementById('race-pace-inp').value.trim(),
