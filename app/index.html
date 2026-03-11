@@ -542,6 +542,13 @@
     /* ── COACH PANEL ─────────────────────────────────── */
     .coach-section { margin-top: 16px; }
     .coach-section .section-title { margin-bottom: 8px; }
+    /* Coach pill multi-select */
+    .coach-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .coach-pill { display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 20px;
+      border: 2px solid var(--border); background: var(--bg); cursor: pointer; font-size: 13px;
+      font-weight: 600; transition: border-color .15s, background .15s, color .15s; user-select: none; }
+    .coach-pill input { display: none; }
+    .coach-pill.selected { border-color: var(--green); background: #f0fdf4; color: var(--green); }
     .attendance-toggle { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
     .attendance-toggle:last-child { border-bottom: none; }
     .toggle-name { flex: 1; font-weight: 600; font-size: 14px; }
@@ -1109,12 +1116,18 @@
         </select>
       </div>
       <div class="form-group">
-        <label>Trenér</label>
-        <select id="tm-coach">
-          <option value="David Vaš">David Vaš</option>
-          <option value="Jana Konturova">Jana Konturova</option>
-          <option value="Vašek Pilát">Vašek Pilát</option>
-        </select>
+        <label>Trenér / Trenéři</label>
+        <div class="coach-pills" id="tm-coaches">
+          <label class="coach-pill">
+            <input type="checkbox" value="David Vaš" onchange="updateCoachPill(this)"> 🧑‍🏫 David Vaš
+          </label>
+          <label class="coach-pill">
+            <input type="checkbox" value="Jana Konturova" onchange="updateCoachPill(this)"> 🧑‍🏫 Jana Konturova
+          </label>
+          <label class="coach-pill">
+            <input type="checkbox" value="Vašek Pilát" onchange="updateCoachPill(this)"> 🧑‍🏫 Vašek Pilát
+          </label>
+        </div>
       </div>
     </div>
     <div class="form-row">
@@ -1844,12 +1857,37 @@ function renderAdminTrainings() {
           <div style="font-size:22px;width:30px;flex-shrink:0;text-align:center">${t.icon || '📅'}</div>
           <div class="admin-list-info">
             <div class="admin-list-name">${t.cancelled ? '🔴 ' : ''}${t.type}${t.audience==='kids' ? ' <span class="kids-badge">🧒 přípravka</span>' : ''}</div>
-            <div class="admin-list-sub">${fmtDate(t.date)} · ${t.time} · ${t.coach ? t.coach + ' · ' : ''}${(t.audience==='kids' ? (t.kidsRegistered||[]).length : t.registered.length)}/${t.capacity} míst</div>
+            <div class="admin-list-sub">${fmtDate(t.date)} · ${t.time} · ${getTrainingCoaches(t).join(', ')} · ${(t.audience==='kids' ? (t.kidsRegistered||[]).length : t.registered.length)}/${t.capacity} míst</div>
           </div>
         </div>
       </div>`).join('')}
   </div></div>`;
   initSwipeRows();
+}
+
+/* ── Coach pills helpers ─────────────────────────────────────────── */
+/** Returns array of coaches – handles both old `coach` string and new `coaches` array */
+function getTrainingCoaches(t) {
+  if (t.coaches && t.coaches.length) return t.coaches;
+  if (t.coach) return [t.coach];
+  return [CFG.coachName || 'David Vaš'];
+}
+/** Toggle visual state of a coach pill when its checkbox changes */
+function updateCoachPill(cb) {
+  cb.closest('.coach-pill').classList.toggle('selected', cb.checked);
+}
+/** Set which pills are checked (array of coach name strings) */
+function setCoachPills(coaches) {
+  document.querySelectorAll('#tm-coaches .coach-pill').forEach(pill => {
+    const cb = pill.querySelector('input');
+    const checked = coaches.includes(cb.value);
+    cb.checked = checked;
+    pill.classList.toggle('selected', checked);
+  });
+}
+/** Read currently checked coach pill values */
+function getCoachPillValues() {
+  return [...document.querySelectorAll('#tm-coaches input:checked')].map(cb => cb.value);
 }
 
 /* ── Training modal open / close / save / delete ─────────────────── */
@@ -1870,7 +1908,7 @@ function openTrainingModal(id) {
     document.getElementById('tm-capacity').value = '35';
     document.getElementById('tm-desc').value     = '';
     document.getElementById('tm-audience').value = 'adult';
-    document.getElementById('tm-coach').value    = CFG.coachName || 'David Vaš';
+    setCoachPills([CFG.coachName || 'David Vaš']);
     document.getElementById('tm-budvar').checked    = false;
     document.getElementById('tm-cancelled').checked = false;
   } else {
@@ -1885,7 +1923,7 @@ function openTrainingModal(id) {
     document.getElementById('tm-capacity').value = t.capacity;
     document.getElementById('tm-desc').value     = t.description;
     document.getElementById('tm-audience').value = t.audience || 'adult';
-    document.getElementById('tm-coach').value    = t.coach || CFG.coachName || 'David Vaš';
+    setCoachPills(getTrainingCoaches(t));
     document.getElementById('tm-budvar').checked    = !!t.budvar;
     document.getElementById('tm-cancelled').checked = !!t.cancelled;
   }
@@ -1929,7 +1967,7 @@ function saveTrainingModal() {
     capacity:    parseInt(document.getElementById('tm-capacity').value) || 35,
     description: document.getElementById('tm-desc').value.trim(),
     audience:    document.getElementById('tm-audience').value || 'adult',
-    coach:       document.getElementById('tm-coach').value || CFG.coachName || 'David Vaš',
+    coaches:     getCoachPillValues().length ? getCoachPillValues() : [CFG.coachName || 'David Vaš'],
     budvar:      document.getElementById('tm-budvar').checked,
     cancelled:   document.getElementById('tm-cancelled').checked,
   };
@@ -2412,7 +2450,7 @@ function renderTraining() {
       <div class="training-hero-meta">
         <span>🕠 ${t.time}</span>
         <span>📍 ${t.location}</span>
-        <span>🧑‍🏫 ${t.coach}</span>
+        <span>🧑‍🏫 ${getTrainingCoaches(t).join(' & ')}</span>
       </div>
     </div>
     <div style="padding:16px">
