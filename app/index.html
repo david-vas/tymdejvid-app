@@ -764,10 +764,13 @@
         <div class="cal-legend-item"><div class="legend-dot" style="background:var(--green)"></div> Dnes</div>
         <div class="cal-legend-item"><div class="legend-dot" style="background:var(--bg);border:1px solid var(--border)"></div> Proběhl</div>
         <div class="cal-legend-item"><div class="legend-dot" style="background:#fee2e2;border:1px solid #ef4444"></div> Zrušen</div>
+        <div class="cal-legend-item"><div class="legend-dot" style="background:#fef3c7;border:1px solid #f59e0b"></div> 🏁 Závod</div>
       </div>
 
       <div class="section-title" style="margin-top:20px">Tréninky tohoto měsíce</div>
       <div id="month-trainings-list"></div>
+      <div id="month-races-title" class="section-title" style="margin-top:20px;display:none">🏁 Závody tohoto měsíce</div>
+      <div id="month-races-list"></div>
     </div>
   </div>
 
@@ -1273,18 +1276,29 @@
   </div>
   <div class="fullscreen-modal-body">
     <div class="form-group"><label>Název závodu</label><input type="text" id="race-name-inp" placeholder="Prague Half Marathon" /></div>
-    <div class="form-row">
-      <div class="form-group"><label>Datum</label><input type="date" id="race-date-inp" /></div>
-      <div class="form-group"><label>Vzdálenost</label><div class="input-suffix-wrap"><input type="number" id="race-dist-inp" placeholder="21,1" step="0.1" min="0" inputmode="decimal" oninput="calcRacePace()" /><span class="input-suffix">km</span></div></div>
+    <div class="form-group"><label>Datum</label><input type="date" id="race-date-inp" /></div>
+    <div class="form-group">
+      <label>Vzdálenost</label>
+      <select id="race-dist-sel" onchange="onDistSelChange()">
+        <option value="">— vyber vzdálenost —</option>
+        <option value="5 km">5 km</option>
+        <option value="10 km">10 km</option>
+        <option value="21,1 km">Půlmaraton · 21,1 km</option>
+        <option value="42,2 km">Maraton · 42,2 km</option>
+        <option value="custom">Vlastní...</option>
+      </select>
+      <div id="race-dist-custom-wrap" style="display:none;margin-top:8px">
+        <div class="input-suffix-wrap">
+          <input type="number" id="race-dist-inp" placeholder="15" step="0.1" min="0" inputmode="decimal" oninput="calcRacePace()" />
+          <span class="input-suffix">km</span>
+        </div>
+      </div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Čas</label><input type="text" id="race-time-inp" placeholder="1:45:32" oninput="calcRacePace()" /></div>
-      <div class="form-group"><label>Pořadí</label><input type="number" id="race-place-inp" placeholder="42" min="1" /></div>
-    </div>
-    <div class="form-row">
       <div class="form-group"><label>Tempo / km <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--text-light)">(auto)</span></label><input type="text" id="race-pace-inp" placeholder="4:59" /></div>
-      <div class="form-group"></div>
     </div>
+    <div class="form-group"><label>Pořadí / umístění</label><input type="number" id="race-place-inp" placeholder="42" min="1" /></div>
     <div class="form-group"><label>Odkaz na závod <span style="color:var(--text-light);font-weight:400">(volitelné)</span></label><input type="url" id="race-url-inp" placeholder="https://..." /></div>
   </div>
   <div class="fullscreen-modal-footer">
@@ -2021,6 +2035,31 @@ function renderCalendar() {
   } else {
     mtl.innerHTML = monthTrainings.map(t => trainingCard(t)).join('');
   }
+
+  // Závody tohoto měsíce
+  const monthPrefix = `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,'0')}`;
+  const monthRaces  = (STATE.user?.races || [])
+    .filter(r => r.date && r.date.startsWith(monthPrefix))
+    .sort((a,b) => a.date.localeCompare(b.date));
+  const mrt = document.getElementById('month-races-title');
+  const mrl = document.getElementById('month-races-list');
+  mrt.style.display = monthRaces.length ? '' : 'none';
+  mrl.innerHTML = monthRaces.map(r => {
+    const isPastRace = r.date < new Date().toISOString().slice(0,10);
+    const badge = r.time
+      ? `<span class="training-badge" style="background:#fef3c7;color:#92400e;border:1px solid #f59e0b">${r.time}</span>`
+      : isPastRace
+        ? `<span class="training-badge badge-past">Proběhl</span>`
+        : `<span class="training-badge" style="background:#fef3c7;color:#92400e">Plánovaný</span>`;
+    return `<div class="training-card" style="cursor:pointer" onclick="navigate('profile')">
+      <div class="training-icon" style="background:#fef3c7;font-size:22px">🏁</div>
+      <div class="training-info">
+        <div class="training-type">${r.name}</div>
+        <div class="training-meta">${fmtDayShort(r.date)}${r.distance ? ' · ' + r.distance : ''}</div>
+      </div>
+      ${badge}
+    </div>`;
+  }).join('');
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2441,10 +2480,27 @@ function openRaceEdit(id) {
   const isNew = !id;
   document.getElementById('race-modal-title').textContent = isNew ? 'Nový závod' : 'Upravit závod';
   document.getElementById('race-delete-btn').style.display = isNew ? 'none' : 'block';
+  const DIST_PRESETS = ['5 km', '10 km', '21,1 km', '42,2 km'];
+  function _setDistField(distVal) {
+    const d = (distVal || '').trim();
+    if (DIST_PRESETS.includes(d)) {
+      document.getElementById('race-dist-sel').value = d;
+      document.getElementById('race-dist-custom-wrap').style.display = 'none';
+      document.getElementById('race-dist-inp').value = '';
+    } else if (d) {
+      document.getElementById('race-dist-sel').value = 'custom';
+      document.getElementById('race-dist-custom-wrap').style.display = 'block';
+      document.getElementById('race-dist-inp').value = d.replace(/\s*km$/i, '');
+    } else {
+      document.getElementById('race-dist-sel').value = '';
+      document.getElementById('race-dist-custom-wrap').style.display = 'none';
+      document.getElementById('race-dist-inp').value = '';
+    }
+  }
   if (isNew) {
     document.getElementById('race-name-inp').value  = '';
     document.getElementById('race-date-inp').value  = '';
-    document.getElementById('race-dist-inp').value  = '';   // type=number, no "km"
+    _setDistField('');
     document.getElementById('race-time-inp').value  = '';
     document.getElementById('race-place-inp').value = '';
     document.getElementById('race-pace-inp').value  = '';
@@ -2452,21 +2508,31 @@ function openRaceEdit(id) {
   } else {
     const race = (STATE.user.races || []).find(r => r.id === id);
     if (!race) return;
-    document.getElementById('race-name-inp').value  = race.name     || '';
-    document.getElementById('race-date-inp').value  = race.date     || '';
-    document.getElementById('race-dist-inp').value  = (race.distance || '').replace(/\s*km$/i, '');
-    document.getElementById('race-time-inp').value  = race.time     || '';
-    document.getElementById('race-place-inp').value = race.place    || '';
-    document.getElementById('race-pace-inp').value  = race.pace     || '';
-    document.getElementById('race-url-inp').value   = race.url      || '';
+    document.getElementById('race-name-inp').value  = race.name  || '';
+    document.getElementById('race-date-inp').value  = race.date  || '';
+    _setDistField(race.distance || '');
+    document.getElementById('race-time-inp').value  = race.time  || '';
+    document.getElementById('race-place-inp').value = race.place || '';
+    document.getElementById('race-pace-inp').value  = race.pace  || '';
+    document.getElementById('race-url-inp').value   = race.url   || '';
   }
   document.getElementById('race-modal').classList.add('open');
 }
 
+function onDistSelChange() {
+  const sel = document.getElementById('race-dist-sel').value;
+  const isCustom = sel === 'custom';
+  document.getElementById('race-dist-custom-wrap').style.display = isCustom ? 'block' : 'none';
+  if (!isCustom) document.getElementById('race-dist-inp').value = '';
+  calcRacePace();
+}
+
 function calcRacePace() {
-  const distStr = document.getElementById('race-dist-inp').value.replace(',', '.');
+  const sel = document.getElementById('race-dist-sel').value;
+  const raw = (sel && sel !== 'custom') ? sel : document.getElementById('race-dist-inp').value;
+  const distStr = (raw || '').replace(',', '.').match(/[\d.]+/)?.[0] || '';
   const timeStr = document.getElementById('race-time-inp').value.trim();
-  const dist = parseFloat(distStr); // works for both "21.1" and "21.1 km"
+  const dist = parseFloat(distStr);
   if (!dist || !timeStr) return;
   const parts = timeStr.split(':').map(Number);
   let secs = 0;
@@ -2492,7 +2558,13 @@ function saveRace() {
     id:       editingRaceId || 'race-' + Date.now(),
     name,
     date:     document.getElementById('race-date-inp').value,
-    distance: (() => { const v = document.getElementById('race-dist-inp').value.trim(); return v ? v + ' km' : ''; })(),
+    distance: (() => {
+      const sel = document.getElementById('race-dist-sel').value;
+      if (!sel || sel === '— vyber vzdálenost —') return '';
+      if (sel !== 'custom') return sel;
+      const v = document.getElementById('race-dist-inp').value.trim();
+      return v ? v + ' km' : '';
+    })(),
     time:     document.getElementById('race-time-inp').value.trim(),
     place:    document.getElementById('race-place-inp').value ? parseInt(document.getElementById('race-place-inp').value) : null,
     pace:     document.getElementById('race-pace-inp').value.trim(),
