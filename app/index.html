@@ -781,10 +781,8 @@
         <div class="cal-legend-item"><div class="legend-dot" style="background:#fef3c7;border:1px solid #f59e0b"></div> 🏁 Závod</div>
       </div>
 
-      <div class="section-title" style="margin-top:20px">Tréninky tohoto měsíce</div>
-      <div id="month-trainings-list"></div>
-      <div id="month-races-title" class="section-title" style="margin-top:20px;display:none">🏁 Závody tohoto měsíce</div>
-      <div id="month-races-list"></div>
+      <div class="section-title" style="margin-top:20px">Události tohoto měsíce</div>
+      <div id="month-events-list"></div>
     </div>
   </div>
 
@@ -793,6 +791,12 @@
     <button class="back-btn" onclick="goBack()">← Zpět</button>
     <div id="training-detail-content"></div>
     <div class="register-bar" id="register-bar"></div>
+  </div>
+
+  <!-- ── RACE DETAIL ────────────────────────────────────── -->
+  <div id="screen-race" class="screen">
+    <button class="back-btn" onclick="goBack()">← Zpět</button>
+    <div id="race-detail-content"></div>
   </div>
 
   <!-- ── ATTENDANCE ────────────────────────────────────── -->
@@ -1471,6 +1475,7 @@ let STATE = {
   currentScreen:     'dashboard',
   prevScreen:        null,
   selectedTraining:  null,
+  selectedRace:      null,
   calMonth:          new Date(),
   notionConnected:   false,
   adminTab:          'attendance',   // 'attendance' | 'trainings'
@@ -1847,7 +1852,8 @@ function navigate(screen, data) {
   el.classList.add('active');
   STATE.prevScreen    = STATE.currentScreen;
   STATE.currentScreen = screen;
-  if (data) STATE.selectedTraining = data;
+  if (screen === 'race') { STATE.selectedRace = data; }
+  else if (data) { STATE.selectedTraining = data; }
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.nav === screen));
   window.scrollTo(0, 0);
   renderCurrentScreen();
@@ -1866,6 +1872,7 @@ function renderCurrentScreen() {
     case 'leaderboard': renderLeaderboard(); break;
     case 'profile':     renderProfile();     break;
     case 'admin':       renderAdmin();       break;
+    case 'race':        renderRace();        break;
   }
 }
 
@@ -2039,48 +2046,46 @@ function renderCalendar() {
     else if (race) { cls = 'race-day'; }
     // Přidej 🏁 tečku pro závod (vedle tréninkové tečky nebo samostatně)
     const raceDot = race ? `<span class="cal-dot race" style="${dot ? 'left:calc(50% + 5px);' : ''}"></span>` : '';
-    const click = t ? `onclick="navigate('training','${t.id}')"` : race ? `onclick="navigate('profile')"` : '';
+    const click = t ? `onclick="navigate('training','${t.id}')"` : race ? `onclick="navigate('race','${race.id}')"` : '';
     const title = race ? `title="🏁 ${race.name}"` : '';
     html += `<div class="cal-day ${cls}" ${click} ${title}>${day}${dot}${raceDot}</div>`;
   }
 
   document.getElementById('cal-grid').innerHTML = html;
 
-  // Month training list
+  // Sjednocený seznam událostí měsíce (tréninky + závody, řazeno dle data)
+  const monthPrefix   = `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,'0')}`;
   const monthTrainings = STATE.trainings
-    .filter(t => t.date.startsWith(`${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,'0')}`))
-    .sort((a,b) => a.date.localeCompare(b.date));
-  const mtl = document.getElementById('month-trainings-list');
-  if (monthTrainings.length === 0) {
-    mtl.innerHTML = `<div style="padding:6px 4px 12px;color:var(--text-light);font-size:13px">Žádné tréninky</div>`;
-  } else {
-    mtl.innerHTML = monthTrainings.map(t => trainingCard(t)).join('');
-  }
-
-  // Závody tohoto měsíce
-  const monthPrefix = `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,'0')}`;
-  const monthRaces  = (STATE.user?.races || [])
+    .filter(t => t.date.startsWith(monthPrefix))
+    .map(t => ({ type: 'training', date: t.date, data: t }));
+  const monthRaces = (STATE.user?.races || [])
     .filter(r => r.date && r.date.startsWith(monthPrefix))
-    .sort((a,b) => a.date.localeCompare(b.date));
-  const mrt = document.getElementById('month-races-title');
-  const mrl = document.getElementById('month-races-list');
-  mrt.style.display = monthRaces.length ? '' : 'none';
-  mrl.innerHTML = monthRaces.map(r => {
-    const isPastRace = r.date < new Date().toISOString().slice(0,10);
-    const badge = r.time
-      ? `<span class="training-badge" style="background:#fef3c7;color:#92400e;border:1px solid #f59e0b">${r.time}</span>`
-      : isPastRace
-        ? `<span class="training-badge badge-past">Proběhl</span>`
-        : `<span class="training-badge" style="background:#fef3c7;color:#92400e">Plánovaný</span>`;
-    return `<div class="training-card" style="cursor:pointer" onclick="navigate('profile')">
-      <div class="training-icon" style="background:#fef3c7;font-size:22px">🏁</div>
-      <div class="training-info">
-        <div class="training-type">${r.name}</div>
-        <div class="training-meta">${fmtDayShort(r.date)}${r.distance ? ' · ' + r.distance : ''}</div>
-      </div>
-      ${badge}
-    </div>`;
-  }).join('');
+    .map(r => ({ type: 'race', date: r.date, data: r }));
+  const allEvents = [...monthTrainings, ...monthRaces].sort((a,b) => a.date.localeCompare(b.date));
+
+  const mel = document.getElementById('month-events-list');
+  if (allEvents.length === 0) {
+    mel.innerHTML = `<div style="padding:6px 4px 12px;color:var(--text-light);font-size:13px">V tomto měsíci žádné události</div>`;
+  } else {
+    mel.innerHTML = allEvents.map(ev => {
+      if (ev.type === 'training') return trainingCard(ev.data);
+      const r = ev.data;
+      const isPastRace = r.date < new Date().toISOString().slice(0,10);
+      const badge = r.time
+        ? `<span class="training-badge" style="background:#fef3c7;color:#92400e;border:1px solid #f59e0b">${r.time}</span>`
+        : isPastRace
+          ? `<span class="training-badge badge-past">Proběhl</span>`
+          : `<span class="training-badge" style="background:#fef3c7;color:#92400e">Plánovaný</span>`;
+      return `<div class="training-card" style="cursor:pointer" onclick="navigate('race','${r.id}')">
+        <div class="training-icon" style="background:#fef3c7;font-size:22px">🏁</div>
+        <div class="training-info">
+          <div class="training-type">${r.name}</div>
+          <div class="training-meta">${fmtDayShort(r.date)}${r.distance ? ' · ' + r.distance : ''}</div>
+        </div>
+        ${badge}
+      </div>`;
+    }).join('');
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2188,6 +2193,43 @@ function renderTraining() {
     bar.innerHTML = `<button class="btn btn-green" style="flex:1" onclick="toggleRegister('${t.id}')">✓ Přihlásit se</button>
                      <button class="btn btn-outline" style="flex:1" onclick="showQR()">💳 Platba</button>`;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RACE DETAIL
+   ═══════════════════════════════════════════════════════════════════ */
+function renderRace() {
+  const r = (STATE.user?.races || []).find(x => x.id === STATE.selectedRace);
+  const el = document.getElementById('race-detail-content');
+  if (!r) { el.innerHTML = '<div class="empty-state"><p>Závod nenalezen.</p></div>'; return; }
+
+  const past    = r.date < new Date().toISOString().slice(0,10);
+  const dow     = DAYS_FULL[new Date(r.date + 'T00:00:00').getDay()];
+  const dowCap  = dow.charAt(0).toUpperCase() + dow.slice(1);
+  const hasResult = r.time || r.pace || r.place;
+
+  el.innerHTML = `
+    <div class="training-hero" style="background:linear-gradient(135deg,#78350f,#f59e0b)">
+      <div class="date-big">${dowCap} ${fmtDate(r.date)}</div>
+      <div class="type-big">🏁 ${r.name}</div>
+      <div class="training-hero-meta">
+        ${r.distance ? `<span>📏 ${r.distance}</span>` : ''}
+        ${r.time     ? `<span>⏱ ${r.time}</span>` : ''}
+        ${r.pace     ? `<span>🏃 ${r.pace}/km</span>` : ''}
+      </div>
+    </div>
+    <div style="padding:16px">
+      <div style="background:white;border-radius:var(--radius-sm);border:1px solid var(--border);overflow:hidden;margin-bottom:16px">
+        ${r.distance ? `<div class="info-row" style="padding:14px 16px"><div class="info-icon">📏</div><div><div class="info-label">Vzdálenost</div><div class="info-val">${r.distance}</div></div></div>` : ''}
+        ${r.time     ? `<div class="info-row" style="padding:14px 16px"><div class="info-icon">⏱</div><div><div class="info-label">Čas výsledku</div><div class="info-val">${r.time}</div></div></div>` : ''}
+        ${r.pace     ? `<div class="info-row" style="padding:14px 16px"><div class="info-icon">🏃</div><div><div class="info-label">Tempo / km</div><div class="info-val">${r.pace}/km</div></div></div>` : ''}
+        ${r.place    ? `<div class="info-row" style="padding:14px 16px"><div class="info-icon">🏅</div><div><div class="info-label">Pořadí / umístění</div><div class="info-val">${r.place}. místo</div></div></div>` : ''}
+        ${!hasResult && past  ? `<div style="padding:16px;color:var(--text-light);font-size:13px;text-align:center">Ještě jsi nezadal/a výsledek.</div>` : ''}
+        ${!hasResult && !past ? `<div style="padding:16px;color:var(--green);font-weight:600;font-size:13px;text-align:center">🏃 Závod se blíží! Výsledek přidáš po dokončení.</div>` : ''}
+      </div>
+      ${r.url ? `<a href="${r.url}" target="_blank" rel="noopener" class="btn btn-green" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;margin-bottom:12px">🔗 Stránka závodu</a>` : ''}
+      <button class="btn" style="width:100%;border:2px solid var(--border);background:white;color:var(--text);font-size:14px" onclick="openRaceEdit('${r.id}')">✏️ Upravit / přidat výsledek</button>
+    </div>`;
 }
 
 function toggleRegister(trainingId) {
