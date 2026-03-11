@@ -600,6 +600,18 @@
     .admin-list-sub  { font-size: 12px; color: var(--text-light); margin-top: 2px; }
     .admin-list-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
+    /* ── KIDS TRAINING ───────────────────────────────── */
+    .cal-day.kids-training { background: #fff7ed; }
+    .cal-day.kids-training.today { background: #f97316 !important; color: white !important; }
+    .cal-dot.kids { background: #f97316; }
+    .kids-hero { background: linear-gradient(135deg, #7c2d12 0%, #f97316 100%) !important; }
+    .kids-badge { display:inline-flex;align-items:center;gap:4px;background:#fff7ed;color:#c2410c;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid #fed7aa; }
+
+    /* ── LEADERBOARD TABS ────────────────────────────── */
+    .lb-tabs { display: flex; margin-bottom: 16px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
+    .lb-tab { flex: 1; padding: 10px; text-align: center; font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 13px; background: var(--bg); color: var(--text-light); cursor: pointer; transition: all .2s; }
+    .lb-tab.active { background: var(--green); color: white; }
+
     /* ── ACCORDION (rollap) ──────────────────────────── */
     .accordion { border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 10px; background: white; box-shadow: var(--shadow); }
     .accordion-header {
@@ -1005,6 +1017,10 @@
       <span style="font-size:12px;color:var(--text-light)">Rok 2026</span>
     </div>
     <div class="screen-content">
+      <div class="lb-tabs">
+        <div class="lb-tab active" id="lb-tab-adult" onclick="switchLbTab('adult')">🏃 Dospělí</div>
+        <div class="lb-tab"        id="lb-tab-kids"  onclick="switchLbTab('kids')">🧒 Přípravka</div>
+      </div>
       <div id="leaderboard-list"></div>
     </div>
   </div>
@@ -1086,6 +1102,23 @@
     </div>
     <div class="form-row">
       <div class="form-group">
+        <label>Pro koho</label>
+        <select id="tm-audience" onchange="onAudienceChange()">
+          <option value="adult">🏃 Dospělí</option>
+          <option value="kids">🧒 Děti – přípravka</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Trenér</label>
+        <select id="tm-coach">
+          <option value="David Vaš">David Vaš</option>
+          <option value="Jana Konturova">Jana Konturova</option>
+          <option value="Vašek Pilát">Vašek Pilát</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
         <label>Kapacita</label>
         <input type="number" id="tm-capacity" value="35" min="1" max="200" />
       </div>
@@ -1114,6 +1147,29 @@
   <div class="fullscreen-modal-footer">
     <button class="btn btn-green" style="flex:1" onclick="saveTrainingModal()">💾 Uložit trénink</button>
     <button class="btn btn-red btn-sm" id="tm-delete-btn" onclick="deleteCurrentTraining()" style="display:none">🗑</button>
+  </div>
+</div>
+
+<!-- ════ KIDS REGISTRATION MODAL ═════════════════════════════════════ -->
+<div class="fullscreen-modal" id="kids-reg-modal">
+  <div class="fullscreen-modal-header">
+    <button class="back-btn" style="padding:0;color:var(--text-light)" onclick="closeKidsRegModal()">✕</button>
+    <div class="fullscreen-modal-title">Přihlásit dítě</div>
+    <button class="btn btn-green btn-sm" onclick="saveKidsRegistration()">Přihlásit</button>
+  </div>
+  <div class="fullscreen-modal-body">
+    <div style="background:#fff7ed;border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;font-size:13px;color:#9a3412;line-height:1.6">
+      🧒 Přihlašuješ dítě jako rodič nebo zákonný zástupce.
+    </div>
+    <div class="form-group">
+      <label>Jméno dítěte</label>
+      <input type="text" id="kr-name" placeholder="Jana Nováková" />
+    </div>
+    <div class="form-group">
+      <label>Rok narození</label>
+      <input type="number" id="kr-year" placeholder="2016" min="2008" max="2022" />
+    </div>
+    <p class="form-error" id="kr-error"></p>
   </div>
 </div>
 
@@ -1787,8 +1843,8 @@ function renderAdminTrainings() {
         <div class="swipe-content" id="sc-${t.id}" onclick="openTrainingModal('${t.id}')">
           <div style="font-size:22px;width:30px;flex-shrink:0;text-align:center">${t.icon || '📅'}</div>
           <div class="admin-list-info">
-            <div class="admin-list-name">${t.cancelled ? '🔴 ' : ''}${t.type}</div>
-            <div class="admin-list-sub">${fmtDate(t.date)} · ${t.time} · ${t.registered.length}/${t.capacity} míst</div>
+            <div class="admin-list-name">${t.cancelled ? '🔴 ' : ''}${t.type}${t.audience==='kids' ? ' <span class="kids-badge">🧒 přípravka</span>' : ''}</div>
+            <div class="admin-list-sub">${fmtDate(t.date)} · ${t.time} · ${t.coach ? t.coach + ' · ' : ''}${(t.audience==='kids' ? (t.kidsRegistered||[]).length : t.registered.length)}/${t.capacity} míst</div>
           </div>
         </div>
       </div>`).join('')}
@@ -1813,6 +1869,8 @@ function openTrainingModal(id) {
     document.getElementById('tm-location').value = CFG.trainingLocation;
     document.getElementById('tm-capacity').value = '35';
     document.getElementById('tm-desc').value     = '';
+    document.getElementById('tm-audience').value = 'adult';
+    document.getElementById('tm-coach').value    = CFG.coachName || 'David Vaš';
     document.getElementById('tm-budvar').checked    = false;
     document.getElementById('tm-cancelled').checked = false;
   } else {
@@ -1826,6 +1884,8 @@ function openTrainingModal(id) {
     document.getElementById('tm-location').value = t.location;
     document.getElementById('tm-capacity').value = t.capacity;
     document.getElementById('tm-desc').value     = t.description;
+    document.getElementById('tm-audience').value = t.audience || 'adult';
+    document.getElementById('tm-coach').value    = t.coach || CFG.coachName || 'David Vaš';
     document.getElementById('tm-budvar').checked    = !!t.budvar;
     document.getElementById('tm-cancelled').checked = !!t.cancelled;
   }
@@ -1836,6 +1896,16 @@ function openTrainingModal(id) {
 function closeTrainingModal() {
   document.getElementById('training-modal').classList.remove('open');
   STATE.editingTrainingId = null;
+}
+
+function onAudienceChange() {
+  const isKids = document.getElementById('tm-audience').value === 'kids';
+  if (isKids) {
+    if (!document.getElementById('tm-icon').value || document.getElementById('tm-icon').value === '⚡')
+      document.getElementById('tm-icon').value = '🧒';
+    if (document.getElementById('tm-capacity').value === '35')
+      document.getElementById('tm-capacity').value = '20';
+  }
 }
 
 function saveTrainingModal() {
@@ -1858,9 +1928,10 @@ function saveTrainingModal() {
     location:    document.getElementById('tm-location').value.trim() || CFG.trainingLocation,
     capacity:    parseInt(document.getElementById('tm-capacity').value) || 35,
     description: document.getElementById('tm-desc').value.trim(),
+    audience:    document.getElementById('tm-audience').value || 'adult',
+    coach:       document.getElementById('tm-coach').value || CFG.coachName || 'David Vaš',
     budvar:      document.getElementById('tm-budvar').checked,
     cancelled:   document.getElementById('tm-cancelled').checked,
-    coach:       CFG.coachName,
   };
 
   const id     = STATE.editingTrainingId;
@@ -2221,13 +2292,14 @@ function renderCalendar() {
     const past = iso < todayStr;
     const race = raceMap[iso];
     let cls = '', dot = '';
+    const isKids = t?.audience === 'kids';
     if (isT && t && t.cancelled) { cls = 'cancelled-day'; dot = `<span class="cal-dot red"></span>`; }
-    else if (isT && t) { cls = 'today training'; dot = `<span class="cal-dot white"></span>`; }
+    else if (isT && t) { cls = `today training${isKids?' kids-training':''}`; dot = `<span class="cal-dot ${isKids?'kids':'white'}"></span>`; }
     else if (isT)  { cls = 'today'; }
     else if (t && t.cancelled) { cls = 'cancelled-day'; dot = `<span class="cal-dot red"></span>`; }
-    else if (t && reg && !past) { cls = 'registered'; dot = `<span class="cal-dot blue"></span>`; }
-    else if (t && !past) { cls = 'training'; dot = `<span class="cal-dot green"></span>`; }
-    else if (t && past)  { cls = 'past-training'; dot = `<span class="cal-dot gray"></span>`; }
+    else if (t && reg && !past) { cls = isKids ? 'kids-training registered' : 'registered'; dot = `<span class="cal-dot ${isKids?'kids':'blue'}"></span>`; }
+    else if (t && !past) { cls = isKids ? 'kids-training' : 'training'; dot = `<span class="cal-dot ${isKids?'kids':'green'}"></span>`; }
+    else if (t && past)  { cls = isKids ? 'kids-training past-training' : 'past-training'; dot = `<span class="cal-dot ${isKids?'kids':'gray'}"></span>`; }
     else if (race) { cls = 'race-day'; }
     // Přidej 🏁 tečku pro závod (vedle tréninkové tečky nebo samostatně)
     const raceDot = race ? `<span class="cal-dot race" style="${dot ? 'left:calc(50% + 5px);' : ''}"></span>` : '';
@@ -2302,7 +2374,9 @@ function renderTraining() {
     return;
   }
 
-  // Participants avatars
+  const isKids = t.audience === 'kids';
+
+  // Participants avatars (adults) / kids list
   const all = [...new Set([...t.registered, ...(reg ? [STATE.user.email] : [])])];
   const shown = all.slice(0,6);
   const extra = all.length - shown.length;
@@ -2312,15 +2386,33 @@ function renderTraining() {
     return `<div class="avatar-mini" title="${u?.name || e}">${init}</div>`;
   }).join('') + (extra > 0 ? `<div class="avatar-mini more">+${extra}</div>` : '');
 
+  const kidsReg = t.kidsRegistered || [];
+  const myKidsReg = kidsReg.find(k => k.parentId === STATE.user?.id);
+  const kidsAtt = t.kidsAttendance || {};
+  const kidsListHtml = kidsReg.length
+    ? kidsReg.map(k => {
+        const key = k.childName + '_' + k.birthYear;
+        const present = kidsAtt[key]?.present;
+        return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+          <div class="avatar-mini" style="background:#fff7ed;color:#c2410c;flex-shrink:0">${k.childName.slice(0,2).toUpperCase()}</div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:600">${k.childName}</div>
+            <div style="font-size:12px;color:var(--text-light)">nar. ${k.birthYear} · rodič: ${k.parentName}</div>
+          </div>
+          ${past && present !== undefined ? `<span style="font-size:13px">${present ? '✅' : '❌'}</span>` : ''}
+        </div>`;
+      }).join('')
+    : `<p style="color:var(--text-light);font-size:13px;margin:8px 0">Zatím žádné přihlášené děti.</p>`;
+
   document.getElementById('training-detail-content').innerHTML = `
-    <div class="training-hero">
+    <div class="training-hero${isKids ? ' kids-hero' : ''}">
       <div class="date-big">${DAYS_FULL[new Date(t.date+'T00:00:00').getDay()].charAt(0).toUpperCase() + DAYS_FULL[new Date(t.date+'T00:00:00').getDay()].slice(1)} ${fmtDate(t.date)}</div>
-      <div class="type-big">${t.icon} ${t.type}</div>
+      <div class="type-big">${t.icon} ${t.type}${isKids ? ' <span style="font-size:14px;opacity:.8">· přípravka</span>' : ''}</div>
       ${t.trainNum ? `<div style="font-size:13px;opacity:.75;margin-top:4px">${t.trainNum}. trénink roku 2026</div>` : ''}
       <div class="training-hero-meta">
         <span>🕠 ${t.time}</span>
         <span>📍 ${t.location}</span>
-        <span>👤 ${t.coach}</span>
+        <span>🧑‍🏫 ${t.coach}</span>
       </div>
     </div>
     <div style="padding:16px">
@@ -2330,18 +2422,26 @@ function renderTraining() {
             <div class="info-icon">📝</div>
             <div><div class="info-label">Popis tréninku</div><div class="info-val" style="font-weight:400;line-height:1.5">${t.description}</div></div>
           </div>
+          ${isKids ? `
+          <div class="info-row">
+            <div class="info-icon">🧒</div>
+            <div style="flex:1">
+              <div class="info-label">Přihlášené děti (${kidsReg.length}/${t.capacity})</div>
+              <div style="margin-top:8px">${kidsListHtml}</div>
+            </div>
+          </div>` : `
           <div class="info-row">
             <div class="info-icon">👥</div>
             <div style="flex:1">
               <div class="info-label">Přihlášení (${all.length}/${t.capacity})</div>
               <div class="participants-row" style="margin-top:8px">${avatarsHtml || '<span style="color:var(--text-light);font-size:13px">Zatím nikdo</span>'}</div>
             </div>
-          </div>
+          </div>`}
           <div class="info-row">
             <div class="info-icon">📍</div>
             <div><div class="info-label">Místo</div><div class="info-val">${t.location}</div></div>
           </div>
-          ${past ? `
+          ${past && !isKids ? `
           <div class="info-row">
             <div class="info-icon">✅</div>
             <div>
@@ -2361,8 +2461,17 @@ function renderTraining() {
 
   // Register bar
   const bar = document.getElementById('register-bar');
+  const kidsFull = isKids && kidsReg.length >= t.capacity && !myKidsReg;
   if (past) {
     bar.innerHTML = `<button class="btn btn-gray btn-full" disabled>Trénink již proběhl</button>`;
+  } else if (isKids) {
+    if (myKidsReg) {
+      bar.innerHTML = `<button class="btn btn-red btn-full" onclick="cancelKidsRegistration('${t.id}')">✕ Odhlásit dítě (${myKidsReg.childName})</button>`;
+    } else if (kidsFull) {
+      bar.innerHTML = `<button class="btn btn-gray btn-full" disabled>Trénink je plný</button>`;
+    } else {
+      bar.innerHTML = `<button class="btn btn-full" style="background:#f97316;color:white;font-weight:700" onclick="openKidsRegModal('${t.id}')">🧒 Přihlásit dítě</button>`;
+    }
   } else if (isToday(t.date)) {
     bar.innerHTML = reg
       ? `<button class="btn btn-red" style="flex:1" onclick="toggleRegister('${t.id}')">Odhlásit se</button>
@@ -2433,6 +2542,76 @@ function toggleRegister(trainingId) {
   saveState();
   syncRegistrationToNotion(trainingId, !wasReg);
   renderTraining();
+}
+
+/* ── Kids registration ───────────────────────────────────────────── */
+let _kidsRegTrainingId = null;
+
+function openKidsRegModal(trainingId) {
+  _kidsRegTrainingId = trainingId;
+  document.getElementById('kr-name').value = '';
+  document.getElementById('kr-year').value = '';
+  document.getElementById('kr-error').classList.remove('show');
+  document.getElementById('kids-reg-modal').classList.add('open');
+}
+
+function closeKidsRegModal() {
+  document.getElementById('kids-reg-modal').classList.remove('open');
+  _kidsRegTrainingId = null;
+}
+
+function saveKidsRegistration() {
+  const childName = document.getElementById('kr-name').value.trim();
+  const birthYear = parseInt(document.getElementById('kr-year').value);
+  const errEl = document.getElementById('kr-error');
+  if (!childName || !birthYear || birthYear < 2005 || birthYear > 2022) {
+    errEl.textContent = 'Vyplň jméno dítěte a platný rok narození.';
+    errEl.classList.add('show'); return;
+  }
+  const id = _kidsRegTrainingId;
+  const t = STATE.trainings.find(tr => tr.id === id);
+  if (!t) return;
+
+  const entry = {
+    parentId:   STATE.user.id,
+    parentName: STATE.user.name,
+    childName,
+    birthYear,
+    registeredAt: new Date().toISOString().slice(0,10),
+  };
+
+  // Ulož do training data
+  const isMock = MOCK_TRAININGS.some(tr => tr.id === id);
+  if (isMock) {
+    _trainingPatches[id] = _trainingPatches[id] || {};
+    _trainingPatches[id].kidsRegistered = [...(t.kidsRegistered || []), entry];
+  } else {
+    const idx = _trainingExtras.findIndex(tr => tr.id === id);
+    if (idx !== -1) _trainingExtras[idx].kidsRegistered = [...(t.kidsRegistered || []), entry];
+  }
+  saveTrainingData();
+  STATE.trainings = buildTrainings();
+  closeKidsRegModal();
+  renderTraining();
+  showToast(`${childName} přihlášen/a! 🧒`, 'success');
+}
+
+function cancelKidsRegistration(trainingId) {
+  const t = STATE.trainings.find(tr => tr.id === trainingId);
+  if (!t) return;
+  const newList = (t.kidsRegistered || []).filter(k => k.parentId !== STATE.user.id);
+  const isMock = MOCK_TRAININGS.some(tr => tr.id === trainingId);
+  if (isMock) {
+    _trainingPatches[trainingId] = _trainingPatches[trainingId] || {};
+    _trainingPatches[trainingId].kidsRegistered = newList;
+  } else {
+    const idx = _trainingExtras.findIndex(tr => tr.id === trainingId);
+    if (idx !== -1) _trainingExtras[idx].kidsRegistered = newList;
+  }
+  saveTrainingData();
+  STATE.trainings = buildTrainings();
+  renderTraining();
+  showToast('Dítě odhlášeno', '');
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -3478,12 +3657,33 @@ function renderAdminAttendance(trainingId) {
   if (!trainingId) return;
   const t = STATE.trainings.find(tr => tr.id === trainingId);
   if (!t) return;
+  const listEl = document.getElementById('admin-attendance-list');
+
+  if (t.audience === 'kids') {
+    // ── Dětský trénink ─────────────────────────────────
+    const kidsReg = t.kidsRegistered || [];
+    const kidsAtt = t.kidsAttendance || {};
+    if (!kidsReg.length) {
+      listEl.innerHTML = '<p style="color:var(--text-light);font-size:14px;padding:8px 0">🧒 Žádné přihlášené děti.</p>';
+      return;
+    }
+    listEl.innerHTML = kidsReg.map(k => {
+      const key = k.childName + '_' + k.birthYear;
+      const present = kidsAtt[key]?.present || false;
+      return `<div class="attendance-toggle">
+        <div class="avatar-mini" style="background:#fff7ed;color:#c2410c">${k.childName.slice(0,2).toUpperCase()}</div>
+        <div class="toggle-name">${k.childName} <span style="font-size:11px;color:var(--text-light)">${k.birthYear} · ${k.parentName}</span></div>
+        <div class="toggle-btn ${present ? 'on' : ''}" onclick="coachToggleKidsAtt('${trainingId}','${key}',this)"></div>
+      </div>`;
+    }).join('');
+    return;
+  }
+
+  // ── Dospělý trénink ──────────────────────────────────
   const users = getAllUsers().filter(u => u.role === 'member');
   const registered = users.filter(u => t.registered.includes(u.email));
   const all = registered.length > 0 ? registered : users;
-
-  document.getElementById('admin-attendance-list').innerHTML = all.map(u => {
-    // Čteme docházku ze Firestore cache (users/{uid}.attendance)
+  listEl.innerHTML = all.map(u => {
     const cached  = (_usersCache || []).find(uc => uc.id === u.id);
     const present = cached?.attendance?.[trainingId]?.present || false;
     return `<div class="attendance-toggle">
@@ -3537,6 +3737,25 @@ function coachToggleAtt(trainingId, userId, btn) {
     }
   }
   showToast(present ? 'Docházka zaznamenána ✓' : 'Docházka odebrána', present ? 'success' : '');
+}
+
+function coachToggleKidsAtt(trainingId, childKey, btn) {
+  btn.classList.toggle('on');
+  const present = btn.classList.contains('on');
+  const t = STATE.trainings.find(tr => tr.id === trainingId);
+  if (!t) return;
+  const newAtt = { ...(t.kidsAttendance || {}), [childKey]: { present } };
+  const isMock = MOCK_TRAININGS.some(tr => tr.id === trainingId);
+  if (isMock) {
+    _trainingPatches[trainingId] = _trainingPatches[trainingId] || {};
+    _trainingPatches[trainingId].kidsAttendance = newAtt;
+  } else {
+    const idx = _trainingExtras.findIndex(tr => tr.id === trainingId);
+    if (idx !== -1) _trainingExtras[idx].kidsAttendance = newAtt;
+  }
+  saveTrainingData();
+  STATE.trainings = buildTrainings();
+  showToast(present ? '✅ Docházka zaznamenána' : 'Docházka odebrána', present ? 'success' : '');
 }
 
 function coachToggleAttFromDetail(trainingId, userId) {
@@ -3961,7 +4180,34 @@ function buildLiveLeaderboard() {
   return { members: Object.values(map), total };
 }
 
+/* ── Kids leaderboard ────────────────────────────────────────────── */
+let _lbTab = 'adult';
+
+function switchLbTab(tab) {
+  _lbTab = tab;
+  document.getElementById('lb-tab-adult').classList.toggle('active', tab === 'adult');
+  document.getElementById('lb-tab-kids').classList.toggle('active',  tab === 'kids');
+  renderLeaderboard();
+}
+
+function buildKidsLeaderboard() {
+  const today = new Date().toISOString().slice(0,10);
+  const kidsTrainings = STATE.trainings.filter(t => t.audience === 'kids' && !t.cancelled && t.date <= today);
+  const total = kidsTrainings.length;
+  const map = {};
+  kidsTrainings.forEach(t => {
+    const kidsAtt = t.kidsAttendance || {};
+    (t.kidsRegistered || []).forEach(k => {
+      const key = k.childName + '_' + k.birthYear;
+      if (!map[key]) map[key] = { name: k.childName, birthYear: k.birthYear, count: 0 };
+      if (kidsAtt[key]?.present) map[key].count++;
+    });
+  });
+  return { members: Object.values(map).sort((a,b) => b.count - a.count), total };
+}
+
 function renderLeaderboard() {
+  if (_lbTab === 'kids') { renderKidsLeaderboard(); return; }
   const { members: allMembers, total } = buildLiveLeaderboard();
   let members = allMembers.slice();
   members.sort((a, b) => b.count - a.count);
@@ -4051,6 +4297,49 @@ function renderLeaderboard() {
     ${podiumHtml}
     ${rest.length ? `<div class="card"><div class="card-body" style="padding:8px 16px">${restHtml}</div></div>` : ''}
     ${budvarHtml}
+  `;
+}
+
+function renderKidsLeaderboard() {
+  const { members, total } = buildKidsLeaderboard();
+  const el = document.getElementById('leaderboard-list');
+  if (!members.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:48px 24px"><div class="empty-icon">🧒</div><p>Žádná data přípravky.<br>Vytvořte dětský trénink a přihlaste děti.</p></div>`;
+    return;
+  }
+  const medals = ['🥇','🥈','🥉'];
+  const podiumCls = ['gold','silver','bronze'];
+  const podium = members.slice(0,3);
+  const rest   = members.slice(3);
+  const podiumOrder = [1,0,2].map(i => ({ m: podium[i], i })).filter(x => x.m);
+  const podiumHtml = `<div class="lb-podium">
+    ${podiumOrder.map(({ m, i }) => {
+      const pct = total ? Math.round(m.count / total * 100) : 0;
+      return `<div class="lb-podium-item ${podiumCls[i]}">
+        <div class="lb-podium-medal">${medals[i]}</div>
+        <div class="lb-podium-name">${m.name}</div>
+        <div class="lb-podium-count">${m.count}</div>
+        <div class="lb-podium-pct">${pct}%</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+  const restHtml = rest.map((m,i) => {
+    const pct = total ? Math.round(m.count / total * 100) : 0;
+    const init = m.name.slice(0,2).toUpperCase();
+    return `<div class="lb-row">
+      <div class="lb-rank">${i+4}.</div>
+      <div class="lb-avatar" style="background:#fff7ed;color:#c2410c">${init}</div>
+      <div class="lb-name">${m.name} <span style="font-size:11px;color:var(--text-light)">${m.birthYear}</span></div>
+      <div class="lb-stats">
+        <div class="lb-cnt">${m.count}<span style="font-size:12px;color:var(--text-light);font-weight:400"> / ${total}</span></div>
+        <div class="lb-pct">${pct}%</div>
+      </div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `
+    <div style="margin-bottom:8px;font-size:13px;color:var(--text-light)">🧒 Přípravka · ${total} tréninků</div>
+    ${podiumHtml}
+    ${rest.length ? `<div class="card"><div class="card-body" style="padding:8px 16px">${restHtml}</div></div>` : ''}
   `;
 }
 
