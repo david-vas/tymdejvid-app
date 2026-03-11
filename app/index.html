@@ -256,6 +256,7 @@
     .cal-month { font-family: 'Baloo 2', sans-serif; font-size: 20px; font-weight: 700; }
     .cal-nav { background: none; border: 1.5px solid var(--border); border-radius: var(--radius-sm); width: 36px; height: 36px; font-size: 16px; display: flex; align-items: center; justify-content: center; }
     .cal-nav:hover { background: var(--green-light); border-color: var(--green); }
+    .cal-today-btn { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; border: 1.5px solid var(--green); background: var(--green-light); color: var(--green); cursor: pointer; font-family: inherit; white-space: nowrap; }
     .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
     .cal-dow { text-align: center; font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; padding: 4px 0 8px; }
     .cal-day {
@@ -701,7 +702,7 @@
 <div id="app" class="hidden">
 
   <header class="app-header">
-    <div class="logo"><img src="logo.png" alt="#TYMDEJVID" /></div>
+    <div class="logo" onclick="navigate('dashboard')" style="cursor:pointer"><img src="logo.png" alt="#TYMDEJVID" /></div>
     <div class="header-right">
       <div class="notification-btn" onclick="showToast('Žádné nové zprávy','')">🔔<span class="notif-dot"></span></div>
       <div class="avatar-sm" id="header-avatar" onclick="navigate('profile')"></div>
@@ -765,7 +766,10 @@
       <div class="cal-header">
         <button class="cal-nav" onclick="changeMonth(-1)">&#8249;</button>
         <div class="cal-month" id="cal-month-label"></div>
-        <button class="cal-nav" onclick="changeMonth(1)">&#8250;</button>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button class="cal-today-btn" id="cal-today-btn" onclick="goToToday()" style="display:none">Dnes</button>
+          <button class="cal-nav" onclick="changeMonth(1)">&#8250;</button>
+        </div>
       </div>
       <div class="card">
         <div class="card-body">
@@ -1300,6 +1304,14 @@
         <span class="date-picker-icon">📅</span>
         <span class="date-picker-label placeholder" id="race-date-display">Vyber datum</span>
         <input type="date" id="race-date-inp" oninput="updateRaceDateDisplay()" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Čas startu <span style="color:var(--text-light);font-weight:400">(volitelné)</span></label>
+      <div class="date-picker-btn">
+        <span class="date-picker-icon">🕐</span>
+        <span class="date-picker-label placeholder" id="race-start-display">Vyber čas startu</span>
+        <input type="time" id="race-start-inp" oninput="updateRaceStartDisplay()" />
       </div>
     </div>
     <div class="form-group">
@@ -2007,9 +2019,19 @@ function changeMonth(dir) {
   renderCalendar();
 }
 
+function goToToday() {
+  STATE.calMonth = new Date();
+  renderCalendar();
+}
+
 function renderCalendar() {
   const m = STATE.calMonth;
   document.getElementById('cal-month-label').textContent = `${MONTHS_CS[m.getMonth()]} ${m.getFullYear()}`;
+  // "Dnes" tlačítko — jen když nejsme na aktuálním měsíci
+  const now = new Date();
+  const isCurrentMonth = m.getFullYear() === now.getFullYear() && m.getMonth() === now.getMonth();
+  const todayBtn = document.getElementById('cal-today-btn');
+  if (todayBtn) todayBtn.style.display = isCurrentMonth ? 'none' : '';
 
   const firstDay = new Date(m.getFullYear(), m.getMonth(), 1);
   const lastDay  = new Date(m.getFullYear(), m.getMonth() + 1, 0);
@@ -2080,7 +2102,7 @@ function renderCalendar() {
         <div class="training-icon" style="background:#fef3c7;font-size:22px">🏁</div>
         <div class="training-info">
           <div class="training-type">${r.name}</div>
-          <div class="training-meta">${fmtDayShort(r.date)}${r.distance ? ' · ' + r.distance : ''}</div>
+          <div class="training-meta">${fmtDayShort(r.date)}${r.startTime ? ' · 🕐 ' + r.startTime : ''}${r.distance ? ' · ' + r.distance : ''}</div>
         </div>
         ${badge}
       </div>`;
@@ -2213,17 +2235,18 @@ function renderRace() {
       <div class="date-big">${dowCap} ${fmtDate(r.date)}</div>
       <div class="type-big">🏁 ${r.name}</div>
       <div class="training-hero-meta">
-        ${r.distance ? `<span>📏 ${r.distance}</span>` : ''}
-        ${r.time     ? `<span>⏱ ${r.time}</span>` : ''}
-        ${r.pace     ? `<span>🏃 ${r.pace}/km</span>` : ''}
+        ${r.distance  ? `<span>📏 ${r.distance}</span>` : ''}
+        ${r.startTime ? `<span>🕐 Start ${r.startTime}</span>` : ''}
+        ${r.time      ? `<span>⏱ ${r.time}</span>` : ''}
       </div>
     </div>
     <div style="padding:16px">
       <div style="background:white;border-radius:var(--radius-sm);border:1px solid var(--border);overflow:hidden;margin-bottom:16px">
-        ${r.distance ? `<div class="info-row" style="padding:14px 16px"><div class="info-icon">📏</div><div><div class="info-label">Vzdálenost</div><div class="info-val">${r.distance}</div></div></div>` : ''}
-        ${r.time     ? `<div class="info-row" style="padding:14px 16px"><div class="info-icon">⏱</div><div><div class="info-label">Čas výsledku</div><div class="info-val">${r.time}</div></div></div>` : ''}
-        ${r.pace     ? `<div class="info-row" style="padding:14px 16px"><div class="info-icon">🏃</div><div><div class="info-label">Tempo / km</div><div class="info-val">${r.pace}/km</div></div></div>` : ''}
-        ${r.place    ? `<div class="info-row" style="padding:14px 16px"><div class="info-icon">🏅</div><div><div class="info-label">Pořadí / umístění</div><div class="info-val">${r.place}. místo</div></div></div>` : ''}
+        ${r.startTime ? `<div class="info-row" style="padding:14px 16px"><div class="info-icon">🕐</div><div><div class="info-label">Čas startu</div><div class="info-val">${r.startTime}</div></div></div>` : ''}
+        ${r.distance  ? `<div class="info-row" style="padding:14px 16px"><div class="info-icon">📏</div><div><div class="info-label">Vzdálenost</div><div class="info-val">${r.distance}</div></div></div>` : ''}
+        ${r.time      ? `<div class="info-row" style="padding:14px 16px"><div class="info-icon">⏱</div><div><div class="info-label">Čas výsledku</div><div class="info-val">${r.time}</div></div></div>` : ''}
+        ${r.pace      ? `<div class="info-row" style="padding:14px 16px"><div class="info-icon">🏃</div><div><div class="info-label">Tempo / km</div><div class="info-val">${r.pace}/km</div></div></div>` : ''}
+        ${r.place     ? `<div class="info-row" style="padding:14px 16px"><div class="info-icon">🏅</div><div><div class="info-label">Pořadí / umístění</div><div class="info-val">${r.place}. místo</div></div></div>` : ''}
         ${!hasResult && past  ? `<div style="padding:16px;color:var(--text-light);font-size:13px;text-align:center">Ještě jsi nezadal/a výsledek.</div>` : ''}
         ${!hasResult && !past ? `<div style="padding:16px;color:var(--green);font-weight:600;font-size:13px;text-align:center">🏃 Závod se blíží! Výsledek přidáš po dokončení.</div>` : ''}
       </div>
@@ -2561,20 +2584,24 @@ function openRaceEdit(id) {
     }
   }
   if (isNew) {
-    document.getElementById('race-name-inp').value  = '';
-    document.getElementById('race-date-inp').value  = '';
+    document.getElementById('race-name-inp').value   = '';
+    document.getElementById('race-date-inp').value   = '';
+    document.getElementById('race-start-inp').value  = '';
     _setDistField('');
-    document.getElementById('race-time-inp').value  = '';
-    document.getElementById('race-place-inp').value = '';
-    document.getElementById('race-pace-inp').value  = '';
-    document.getElementById('race-url-inp').value   = '';
+    document.getElementById('race-time-inp').value   = '';
+    document.getElementById('race-place-inp').value  = '';
+    document.getElementById('race-pace-inp').value   = '';
+    document.getElementById('race-url-inp').value    = '';
     updateRaceDateDisplay();
+    updateRaceStartDisplay();
   } else {
     const race = (STATE.user.races || []).find(r => r.id === id);
     if (!race) return;
-    document.getElementById('race-name-inp').value  = race.name  || '';
-    document.getElementById('race-date-inp').value  = race.date  || '';
+    document.getElementById('race-name-inp').value   = race.name      || '';
+    document.getElementById('race-date-inp').value   = race.date      || '';
+    document.getElementById('race-start-inp').value  = race.startTime || '';
     updateRaceDateDisplay();
+    updateRaceStartDisplay();
     _setDistField(race.distance || '');
     document.getElementById('race-time-inp').value  = race.time  || '';
     document.getElementById('race-place-inp').value = race.place || '';
@@ -2582,6 +2609,18 @@ function openRaceEdit(id) {
     document.getElementById('race-url-inp').value   = race.url   || '';
   }
   document.getElementById('race-modal').classList.add('open');
+}
+
+function updateRaceStartDisplay() {
+  const val = document.getElementById('race-start-inp').value;
+  const el  = document.getElementById('race-start-display');
+  if (val) {
+    el.textContent = val;
+    el.classList.remove('placeholder');
+  } else {
+    el.textContent = 'Vyber čas startu';
+    el.classList.add('placeholder');
+  }
 }
 
 function updateRaceDateDisplay() {
@@ -2645,7 +2684,8 @@ function saveRace() {
     time:     document.getElementById('race-time-inp').value.trim(),
     place:    document.getElementById('race-place-inp').value ? parseInt(document.getElementById('race-place-inp').value) : null,
     pace:     document.getElementById('race-pace-inp').value.trim(),
-    url:      document.getElementById('race-url-inp').value.trim(),
+    url:       document.getElementById('race-url-inp').value.trim(),
+    startTime: document.getElementById('race-start-inp').value || '',
   };
   const races = STATE.user.races || [];
   if (editingRaceId) {
