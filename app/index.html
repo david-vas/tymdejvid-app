@@ -789,8 +789,11 @@
       <div class="menu-item" onclick="navigate('attendance')">
         <span class="menu-icon">📊</span><span class="menu-label">Moje docházka</span><span class="menu-arrow">›</span>
       </div>
+      <div class="menu-item" onclick="showCreditTopup()">
+        <span class="menu-icon">🎟</span><span class="menu-label">Předplatit tréninky</span><span class="menu-arrow">›</span>
+      </div>
       <div class="menu-item" onclick="showQR()">
-        <span class="menu-icon">💳</span><span class="menu-label">Platba QR kódem</span><span class="menu-arrow">›</span>
+        <span class="menu-icon">💳</span><span class="menu-label">Platba QR kódem (jednorázová)</span><span class="menu-arrow">›</span>
       </div>
       <div class="menu-item" id="calc-menu-item" onclick="openCalculator()" style="display:none">
         <span class="menu-icon">🛒</span><span class="menu-label">Koupit běžeckou kalkulačku</span><span class="menu-arrow">›</span>
@@ -801,6 +804,12 @@
       <div class="menu-item" onclick="doLogout()">
         <span class="menu-icon">🚪</span><span class="menu-label" style="color:#ef4444">Odhlásit se</span><span class="menu-arrow" style="color:#ef4444">›</span>
       </div>
+    </div>
+
+    <!-- Historie plateb -->
+    <div class="screen-content" style="padding-top:16px;padding-bottom:0" id="profile-payments-section">
+      <div class="section-title">💰 Historie plateb</div>
+      <div class="card"><div id="profile-payments-content" style="padding:0"></div></div>
     </div>
 
     <!-- Osobní rekordy -->
@@ -2078,6 +2087,42 @@ function renderProfile() {
     </div>`;
   } else {
     creditsEl.style.display = 'none';
+  }
+
+  // Payment history
+  const paymentsEl = document.getElementById('profile-payments-content');
+  const paymentsSection = document.getElementById('profile-payments-section');
+  const hist = (STATE.user.creditHistory || []).slice().reverse();
+  if (hist.length === 0) {
+    paymentsSection.style.display = 'none';
+  } else {
+    paymentsSection.style.display = 'block';
+    // Summary row at top
+    const totalPaid = hist.reduce((s, h) => s + (h.amount || 0), 0);
+    const totalSessions = hist.reduce((s, h) => s + (h.sessions || 0), 0);
+    paymentsEl.innerHTML = `
+      <div style="display:flex;gap:0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;padding:14px 16px;text-align:center;border-right:1px solid var(--border)">
+          <div style="font-size:20px;font-weight:800;font-family:'Baloo 2',sans-serif;color:var(--green)">${totalPaid ? totalPaid.toLocaleString('cs-CZ') + ' Kč' : '—'}</div>
+          <div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-top:2px">Celkem zaplaceno</div>
+        </div>
+        <div style="flex:1;padding:14px 16px;text-align:center">
+          <div style="font-size:20px;font-weight:800;font-family:'Baloo 2',sans-serif;color:var(--green)">${totalSessions}</div>
+          <div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-top:2px">Předplacených</div>
+        </div>
+      </div>
+      <div style="padding:0 16px">
+        ${hist.map(h => {
+          const methodLabel = h.paymentMethod ? ' · ' + (PAY_METHOD_LABELS[h.paymentMethod] || h.paymentMethod) : '';
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)">
+            <div>
+              <div style="font-size:14px;font-weight:700;color:var(--green)">+${h.sessions} ${creditSessionsLabel(h.sessions)}</div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:2px">${fmtDate(h.date)}${methodLabel}${h.note ? ' · ' + h.note : ''}</div>
+            </div>
+            <div style="font-size:15px;font-weight:700;color:var(--text-main)">${h.amount ? h.amount.toLocaleString('cs-CZ') + ' Kč' : '—'}</div>
+          </div>`;
+        }).join('')}
+      </div>`;
   }
 
   // Calculator menu item
