@@ -6,6 +6,10 @@
   <title>#TYMDEJVID – Členský portál</title>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Firebase compat SDK (single-file PWA – no bundler) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -607,22 +611,14 @@
       <div style="text-align:center;margin-bottom:20px">
         <div style="font-size:32px;margin-bottom:8px">🔑</div>
         <div style="font-family:'Baloo 2',sans-serif;font-weight:700;font-size:20px">Zapomenuté heslo</div>
-        <div style="font-size:13px;color:var(--text-light);margin-top:4px">Zadej svůj e-mail a nové heslo</div>
+        <div style="font-size:13px;color:var(--text-light);margin-top:4px">Zadej svůj e-mail – pošleme ti odkaz pro obnovení hesla</div>
       </div>
       <div class="form-group">
         <label>E-mail</label>
         <input type="email" id="forgot-email" placeholder="jan@example.com" />
       </div>
-      <div class="form-group">
-        <label>Nové heslo</label>
-        <input type="password" id="forgot-newpass" placeholder="min. 6 znaků" />
-      </div>
-      <div class="form-group">
-        <label>Potvrdit heslo</label>
-        <input type="password" id="forgot-confirm" placeholder="stejné heslo znovu" />
-      </div>
       <p class="form-error" id="forgot-error"></p>
-      <button class="btn btn-green btn-full" style="margin-top:8px" onclick="doResetPassword()">Nastavit nové heslo</button>
+      <button class="btn btn-green btn-full" style="margin-top:8px" onclick="doResetPassword()">📧 Zaslat odkaz na obnovení hesla</button>
       <p style="text-align:center;margin-top:14px;font-size:13px">
         <a onclick="hideForgotPassword()" style="color:var(--text-light);cursor:pointer">← Zpět na přihlášení</a>
       </p>
@@ -1293,6 +1289,60 @@ const MOCK_USERS = [
 ];
 
 /* ═══════════════════════════════════════════════════════════════════
+   FIREBASE – inicializace
+   Vyplň parametry ze svého Firebase projektu (console.firebase.google.com):
+   Projekt → Nastavení projektu → Tvé aplikace → Web → Konfigurace
+   ═══════════════════════════════════════════════════════════════════ */
+const FIREBASE_CFG = {
+  apiKey:            "DOPLŇ-API-KEY",
+  authDomain:        "DOPLŇ-PROJECT-ID.firebaseapp.com",
+  projectId:         "DOPLŇ-PROJECT-ID",
+  storageBucket:     "DOPLŇ-PROJECT-ID.firebasestorage.app",
+  messagingSenderId: "DOPLŇ-MESSAGING-SENDER-ID",
+  appId:             "DOPLŇ-APP-ID",
+};
+firebase.initializeApp(FIREBASE_CFG);
+const db   = firebase.firestore();
+const auth = firebase.auth();
+// Offline podpora (data dostupná i bez internetu)
+db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+
+/* ── In-memory caches (nahrazují localStorage) ───────────────────── */
+let _usersCache      = null;   // pole všech user docs z Firestore
+let _trainingPatches = {};     // { [trainingId]: {data} }  (editace MOCK tréninků)
+let _trainingExtras  = [];     // [ {id, ...data} ]         (nové tréninky od trenéra)
+let _trainingDeletes = [];     // [ trainingId ]             (smazané tréninky)
+
+/* Načti meta-data tréninků z Firestore */
+async function loadTrainingData() {
+  try {
+    const snap = await db.collection('config').doc('training_data').get();
+    if (snap.exists) {
+      const d = snap.data();
+      _trainingPatches = d.patches || {};
+      _trainingExtras  = d.extras  || [];
+      _trainingDeletes = d.deletes || [];
+    }
+  } catch(e) { console.warn('loadTrainingData:', e); }
+}
+
+/* Ulož meta-data tréninků do Firestore */
+function saveTrainingData() {
+  db.collection('config').doc('training_data').set({
+    patches: _trainingPatches,
+    extras:  _trainingExtras,
+    deletes: _trainingDeletes,
+  }).catch(err => console.error('saveTrainingData:', err));
+}
+
+/* Načti všechny uživatele z Firestore */
+async function loadAllUsers() {
+  const snap = await db.collection('users').get();
+  _usersCache = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+  return _usersCache;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    STATE
    ═══════════════════════════════════════════════════════════════════ */
 let STATE = {
@@ -1310,40 +1360,42 @@ let STATE = {
 };
 
 /* ═══════════════════════════════════════════════════════════════════
-   PERSISTENCE (localStorage)
+   PERSISTENCE (Firestore + in-memory cache)
    ═══════════════════════════════════════════════════════════════════ */
+
+/* Vrátí všechny uživatele ze cache (synchronní) */
+function getAllUsers() {
+  return _usersCache ? [..._usersCache] : [...MOCK_USERS];
+}
+
+/* Uloží pole users do cache + Firestore (fire-and-forget) */
+function saveUsers(users) {
+  _usersCache = [...users];
+  const batch = db.batch();
+  users.forEach(u => {
+    const { id, ...data } = u;
+    batch.set(db.collection('users').doc(id), data, { merge: true });
+  });
+  batch.commit().catch(err => console.error('saveUsers:', err));
+}
+
+/* Uloží docházku + přihlášky aktuálního uživatele do Firestore */
 function saveState() {
   if (!STATE.user) return;
-  const key = `tyd_${STATE.user.id}`;
-  localStorage.setItem(key, JSON.stringify({
-    attendance:    STATE.attendance,
-    registrations: STATE.registrations,
-  }));
-  localStorage.setItem('tyd_users', JSON.stringify(getAllUsers()));
+  const data = { attendance: STATE.attendance, registrations: STATE.registrations };
+  db.collection('users').doc(STATE.user.id)
+    .update(data)
+    .catch(() => db.collection('users').doc(STATE.user.id).set(data, { merge: true })
+      .catch(e => console.error('saveState:', e)));
+  // Udržuj cache v synchronizaci
+  if (_usersCache) {
+    const idx = _usersCache.findIndex(u => u.id === STATE.user.id);
+    if (idx !== -1) Object.assign(_usersCache[idx], data);
+  }
 }
 
-function loadState() {
-  if (!STATE.user) return;
-  const key = `tyd_${STATE.user.id}`;
-  const d = JSON.parse(localStorage.getItem(key) || '{}');
-  STATE.attendance    = d.attendance    || {};
-  STATE.registrations = d.registrations || {};
-}
-
-function getAllUsers() {
-  const stored = JSON.parse(localStorage.getItem('tyd_users') || '[]');
-  if (!stored.length) return [...MOCK_USERS];
-  // Vždy zajisti, že MOCK účty (trenér) jsou přítomny – zabrání výpadku admin přístupu
-  const merged = [...stored];
-  MOCK_USERS.forEach(mu => {
-    if (!merged.find(u => u.id === mu.id)) merged.push(mu);
-  });
-  return merged;
-}
-
-function saveUsers(users) {
-  localStorage.setItem('tyd_users', JSON.stringify(users));
-}
+/* loadState je no-op – data jsou načtena z Firestore v loginSuccess */
+function loadState() {}
 
 /* ═══════════════════════════════════════════════════════════════════
    AUTH
@@ -1364,8 +1416,6 @@ function showForgotPassword() {
   // Pre-fill email if already typed
   const email = document.getElementById('login-email').value;
   if (email) document.getElementById('forgot-email').value = email;
-  document.getElementById('forgot-newpass').value = '';
-  document.getElementById('forgot-confirm').value = '';
   document.getElementById('forgot-error').classList.remove('show');
 }
 
@@ -1375,24 +1425,19 @@ function hideForgotPassword() {
   document.querySelectorAll('.login-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
 }
 
-function doResetPassword() {
-  const email   = document.getElementById('forgot-email').value.trim().toLowerCase();
-  const newpass = document.getElementById('forgot-newpass').value;
-  const confirm = document.getElementById('forgot-confirm').value;
-  const errEl   = document.getElementById('forgot-error');
+async function doResetPassword() {
+  const email = document.getElementById('forgot-email').value.trim().toLowerCase();
+  const errEl = document.getElementById('forgot-error');
   errEl.classList.remove('show');
-  if (!email)           { errEl.textContent = 'Zadej svůj e-mail.';         errEl.classList.add('show'); return; }
-  if (newpass.length < 6) { errEl.textContent = 'Heslo musí mít min. 6 znaků.'; errEl.classList.add('show'); return; }
-  if (newpass !== confirm)  { errEl.textContent = 'Hesla se neshodují.';          errEl.classList.add('show'); return; }
-  const users = getAllUsers();
-  const idx   = users.findIndex(u => u.email.toLowerCase() === email);
-  if (idx === -1) { errEl.textContent = 'E-mail nebyl nalezen.'; errEl.classList.add('show'); return; }
-  users[idx].password = newpass;
-  saveUsers(users);
-  hideForgotPassword();
-  document.getElementById('login-email').value = email;
-  document.getElementById('login-pass').value  = '';
-  showToast('Heslo změněno! Přihlaš se novým heslem.', 'success');
+  if (!email) { errEl.textContent = 'Zadej svůj e-mail.'; errEl.classList.add('show'); return; }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    hideForgotPassword();
+    showToast('📧 E-mail s odkazem odeslán! Zkontroluj schránku.', 'success');
+  } catch(e) {
+    errEl.textContent = 'E-mail nebyl nalezen nebo nastala chyba.';
+    errEl.classList.add('show');
+  }
 }
 
 /* ── Login ───────────────────────────────────────────────────────── */
@@ -1403,65 +1448,70 @@ function togglePassVis(inputId, btnId) {
   else                         { inp.type = 'password'; btn.style.opacity = '0.5'; }
 }
 
-function doLogin() {
+async function doLogin() {
   const email    = document.getElementById('login-email').value.trim().toLowerCase();
   const pass     = document.getElementById('login-pass').value;
   const remember = document.getElementById('login-remember').checked;
-  const users    = getAllUsers();
-  const user     = users.find(u => u.email.toLowerCase() === email && u.password === pass);
-  if (!user) {
-    document.getElementById('login-error').classList.add('show');
-    return;
+  const errEl    = document.getElementById('login-error');
+  errEl.classList.remove('show');
+  try {
+    await auth.setPersistence(
+      remember ? firebase.auth.Auth.Persistence.LOCAL
+               : firebase.auth.Auth.Persistence.SESSION
+    );
+    await auth.signInWithEmailAndPassword(email, pass);
+    // onAuthStateChanged se postará o zbytek
+  } catch(e) {
+    errEl.classList.add('show');
   }
-  document.getElementById('login-error').classList.remove('show');
-  loginSuccess(user, remember);
 }
 
-function doRegister() {
+async function doRegister() {
   const name  = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim().toLowerCase();
   const pass  = document.getElementById('reg-pass').value;
   const errEl = document.getElementById('reg-error');
+  errEl.classList.remove('show');
   if (!name || !email || pass.length < 6) {
     errEl.textContent = 'Vyplň všechna pole (heslo min. 6 znaků).';
     errEl.classList.add('show'); return;
   }
-  const users = getAllUsers();
-  if (users.find(u => u.email.toLowerCase() === email)) {
-    errEl.textContent = 'Tento e-mail je již registrován.';
-    errEl.classList.add('show'); return;
+  try {
+    const gender = document.getElementById('reg-gender').value || 'male';
+    const cred   = await auth.createUserWithEmailAndPassword(email, pass);
+    const newUser = {
+      name, email,
+      role: 'member',
+      gender,
+      joinDate:       new Date().toISOString().slice(0,10),
+      credits:        0,
+      creditHistory:  [],
+      creditUsed:     {},
+      attendance:     {},
+      registrations:  {},
+    };
+    await db.collection('users').doc(cred.user.uid).set(newUser);
+    if (_usersCache) _usersCache.push({ id: cred.user.uid, ...newUser });
+    // onAuthStateChanged se postará o přihlášení
+  } catch(e) {
+    errEl.textContent = e.code === 'auth/email-already-in-use'
+      ? 'Tento e-mail je již registrován.'
+      : 'Chyba registrace: ' + (e.message || e.code);
+    errEl.classList.add('show');
   }
-  const gender = document.getElementById('reg-gender').value || 'male';
-  const newUser = { id: 'u' + Date.now(), name, email, password: pass, role: 'member', gender, joinDate: new Date().toISOString().slice(0,10) };
-  users.push(newUser);
-  saveUsers(users);
-  errEl.classList.remove('show');
-  loginSuccess(newUser);
 }
 
-function loginSuccess(user) {
-  STATE.user = user;
-  loadState();
-  STATE.trainings = MOCK_TRAININGS;
-  document.getElementById('screen-login').style.display = 'none';
-  document.getElementById('app').classList.remove('hidden');
-  updateHeaderAvatar();
-  document.getElementById('admin-menu').style.display = user.role === 'coach' ? 'flex' : 'none';
-  navigate('dashboard');
-  tryLoadNotion();
-  showToast(`Vítej, ${user.name.split(' ')[0]}! 👋`, 'success');
-}
+/* loginSuccess je definována dole – onAuthStateChanged ji zavolá po načtení dat */
 
-function doLogout() {
-  saveState();
-  STATE.user = null;
-  STATE.attendance = {};
+async function doLogout() {
+  STATE.user          = null;
+  STATE.attendance    = {};
   STATE.registrations = {};
-  localStorage.removeItem('tyd_session');
-  sessionStorage.removeItem('tyd_session');
+  _usersCache         = null;
   document.getElementById('admin-menu').style.display = 'none';
   document.getElementById('app').classList.add('hidden');
-  document.getElementById('screen-login').style.display = 'flex';
+  await auth.signOut();
+  // onAuthStateChanged s null zobrazí login screen
 }
 
 function updateHeaderAvatar() {
@@ -1473,34 +1523,15 @@ function updateHeaderAvatar() {
   }
 }
 
-// Auto-login from localStorage or sessionStorage
-window.addEventListener('DOMContentLoaded', () => {
-  const lsSaved = localStorage.getItem('tyd_session');
-  const ssSaved = sessionStorage.getItem('tyd_session');
-  const saved   = lsSaved || ssSaved;
-  if (saved) {
-    const users = getAllUsers();
-    const user  = users.find(u => u.id === saved);
-    if (user) { loginSuccess(user, !!lsSaved); return; }
-  }
-  // show demo hint
-  setTimeout(() => {
-    document.getElementById('login-email').value = 'trener@davidvas.cz';
-    document.getElementById('login-pass').value  = 'davidvas';
-  }, 100);
-});
-
 /* ═══════════════════════════════════════════════════════════════════
-   TRAINING STORAGE (localStorage-based CRUD)
+   TRAINING STORAGE (Firestore-based CRUD)
    ═══════════════════════════════════════════════════════════════════ */
 function buildTrainings() {
-  const patches = JSON.parse(localStorage.getItem('tyd_training_patches') || '{}');
-  const deletes = new Set(JSON.parse(localStorage.getItem('tyd_training_deletes') || '[]'));
-  const extras  = JSON.parse(localStorage.getItem('tyd_extra_trainings')   || '[]');
+  const deletes = new Set(_trainingDeletes);
   let list = MOCK_TRAININGS
     .filter(t => !deletes.has(t.id))
-    .map(t => patches[t.id] ? { ...t, ...patches[t.id] } : t);
-  list = [...list, ...extras.filter(t => !deletes.has(t.id))];
+    .map(t => _trainingPatches[t.id] ? { ...t, ..._trainingPatches[t.id] } : t);
+  list = [...list, ..._trainingExtras.filter(t => !deletes.has(t.id))];
   list.sort((a, b) => a.date.localeCompare(b.date));
   return list;
 }
@@ -1617,20 +1648,17 @@ function saveTrainingModal() {
 
   if (id === 'new') {
     const newId = 't-' + data.date + '-' + Date.now();
-    const extras = JSON.parse(localStorage.getItem('tyd_extra_trainings') || '[]');
-    extras.push({ id: newId, ...data, registered: [], notionId: null });
-    localStorage.setItem('tyd_extra_trainings', JSON.stringify(extras));
+    _trainingExtras.push({ id: newId, ...data, registered: [], notionId: null });
+    saveTrainingData();
     showToast('Trénink vytvořen ✓', 'success');
   } else if (isMock) {
-    const patches = JSON.parse(localStorage.getItem('tyd_training_patches') || '{}');
-    patches[id] = data;
-    localStorage.setItem('tyd_training_patches', JSON.stringify(patches));
+    _trainingPatches[id] = data;
+    saveTrainingData();
     showToast('Trénink uložen ✓', 'success');
   } else {
-    const extras = JSON.parse(localStorage.getItem('tyd_extra_trainings') || '[]');
-    const idx = extras.findIndex(t => t.id === id);
-    if (idx !== -1) { extras[idx] = { ...extras[idx], ...data }; }
-    localStorage.setItem('tyd_extra_trainings', JSON.stringify(extras));
+    const idx = _trainingExtras.findIndex(t => t.id === id);
+    if (idx !== -1) { _trainingExtras[idx] = { ..._trainingExtras[idx], ...data }; }
+    saveTrainingData();
     showToast('Trénink uložen ✓', 'success');
   }
 
@@ -1644,12 +1672,9 @@ function deleteCurrentTraining() {
   if (!id || id === 'new') return;
   if (!confirm('Opravdu smazat tento trénink?')) return;
 
-  const deletes = JSON.parse(localStorage.getItem('tyd_training_deletes') || '[]');
-  if (!deletes.includes(id)) deletes.push(id);
-  localStorage.setItem('tyd_training_deletes', JSON.stringify(deletes));
-
-  const extras = JSON.parse(localStorage.getItem('tyd_extra_trainings') || '[]');
-  localStorage.setItem('tyd_extra_trainings', JSON.stringify(extras.filter(t => t.id !== id)));
+  if (!_trainingDeletes.includes(id)) _trainingDeletes.push(id);
+  _trainingExtras = _trainingExtras.filter(t => t.id !== id);
+  saveTrainingData();
 
   STATE.trainings = buildTrainings();
   closeTrainingModal();
@@ -2383,13 +2408,9 @@ function openRunnerDetail(userId) {
   const today = new Date().toISOString().slice(0,10);
   const pastTrainings = STATE.trainings.filter(t => !t.cancelled && t.date <= today).sort((a,b)=>a.date.localeCompare(b.date));
 
-  // Sloučení docházky: uživatelský stav + coach overrides
-  const stateAtt = JSON.parse(localStorage.getItem(`tyd_state_${user.id}`) || '{}').attendance || {};
-  const merged = { ...stateAtt };
-  pastTrainings.forEach(t => {
-    const val = localStorage.getItem(`tyd_att_${t.id}_${user.id}`);
-    if (val !== null) merged[t.id] = { present: val === '1' };
-  });
+  // Docházka ze Firestore cache (users/{uid}.attendance obsahuje vše)
+  const cachedUser = (_usersCache || []).find(u => u.id === userId) || user;
+  const merged = { ...(cachedUser.attendance || {}) };
 
   const presentCount = Object.values(merged).filter(a => a.present).length;
   const pct = pastTrainings.length ? Math.round(presentCount / pastTrainings.length * 100) : 0;
@@ -2799,9 +2820,9 @@ function renderAdminAttendance(trainingId) {
   const all = registered.length > 0 ? registered : users;
 
   document.getElementById('admin-attendance-list').innerHTML = all.map(u => {
-    // For admin, we track all users' attendance (stored per-coach in a combined key)
-    const attKey = `tyd_att_${trainingId}_${u.id}`;
-    const present = localStorage.getItem(attKey) === '1';
+    // Čteme docházku ze Firestore cache (users/{uid}.attendance)
+    const cached  = (_usersCache || []).find(uc => uc.id === u.id);
+    const present = cached?.attendance?.[trainingId]?.present || false;
     return `<div class="attendance-toggle">
       <div class="avatar-mini">${getInitials(u.name)}</div>
       <div class="toggle-name">${u.name}</div>
@@ -2813,22 +2834,34 @@ function renderAdminAttendance(trainingId) {
 function coachToggleAtt(trainingId, userId, btn) {
   btn.classList.toggle('on');
   const present = btn.classList.contains('on');
-  localStorage.setItem(`tyd_att_${trainingId}_${userId}`, present ? '1' : '0');
-  // If coach is marking their own attendance, update state
+
+  // Aktualizuj attendance v cache a Firestore
+  if (_usersCache) {
+    const ci = _usersCache.findIndex(u => u.id === userId);
+    if (ci !== -1) {
+      _usersCache[ci].attendance = _usersCache[ci].attendance || {};
+      _usersCache[ci].attendance[trainingId] = { present };
+    }
+  }
+  db.collection('users').doc(userId)
+    .update({ [`attendance.${trainingId}`]: { present } })
+    .catch(() => db.collection('users').doc(userId)
+      .set({ [`attendance.${trainingId}`]: { present } }, { merge: true }));
+
+  // Pokud trenér označuje svou vlastní docházku, aktualizuj STATE
   if (userId === STATE.user.id) {
     STATE.attendance[trainingId] = { present };
-    saveState();
   }
   syncAttendanceToNotion(trainingId, userId, present);
 
-  // Credit auto-deduction / refund
+  // Automatické odečtení / vrácení kreditu
   const allUsers = getAllUsers();
   const uIdx = allUsers.findIndex(u => u.id === userId);
   if (uIdx !== -1) {
     const u = allUsers[uIdx];
     const creditUsed = u.creditUsed || {};
     if (present && !creditUsed[trainingId] && (u.credits || 0) > 0) {
-      allUsers[uIdx].credits = u.credits - 1;
+      allUsers[uIdx].credits    = u.credits - 1;
       allUsers[uIdx].creditUsed = { ...creditUsed, [trainingId]: true };
       saveUsers(allUsers);
       showToast(`Docházka ✓ · 🎟 zbývá ${allUsers[uIdx].credits} tréninků`, 'success');
@@ -2844,25 +2877,37 @@ function coachToggleAtt(trainingId, userId, btn) {
 }
 
 function coachToggleAttFromDetail(trainingId, userId) {
-  const cur = localStorage.getItem(`tyd_att_${trainingId}_${userId}`);
-  // Determine current state from merged attendance
-  const stateAtt = JSON.parse(localStorage.getItem(`tyd_state_${userId}`) || '{}').attendance || {};
-  const wasPresent = cur !== null ? cur === '1' : !!(stateAtt[trainingId]?.present);
+  // Zjisti aktuální stav z Firestore cache
+  const cached  = (_usersCache || []).find(u => u.id === userId);
+  const wasPresent = !!(cached?.attendance?.[trainingId]?.present);
   const present = !wasPresent;
-  localStorage.setItem(`tyd_att_${trainingId}_${userId}`, present ? '1' : '0');
+
+  // Aktualizuj cache a Firestore
+  if (_usersCache) {
+    const ci = _usersCache.findIndex(u => u.id === userId);
+    if (ci !== -1) {
+      _usersCache[ci].attendance = _usersCache[ci].attendance || {};
+      _usersCache[ci].attendance[trainingId] = { present };
+    }
+  }
+  db.collection('users').doc(userId)
+    .update({ [`attendance.${trainingId}`]: { present } })
+    .catch(() => db.collection('users').doc(userId)
+      .set({ [`attendance.${trainingId}`]: { present } }, { merge: true }));
+
   if (userId === STATE.user.id) {
     STATE.attendance[trainingId] = { present };
-    saveState();
   }
   syncAttendanceToNotion(trainingId, userId, present);
-  // Credit deduction / refund
+
+  // Odečtení / vrácení kreditu
   const allUsers = getAllUsers();
   const uIdx = allUsers.findIndex(u => u.id === userId);
   if (uIdx !== -1) {
     const u = allUsers[uIdx];
     const creditUsed = u.creditUsed || {};
     if (present && !creditUsed[trainingId] && (u.credits || 0) > 0) {
-      allUsers[uIdx].credits = u.credits - 1;
+      allUsers[uIdx].credits    = u.credits - 1;
       allUsers[uIdx].creditUsed = { ...creditUsed, [trainingId]: true };
       saveUsers(allUsers);
     } else if (!present && creditUsed[trainingId]) {
@@ -3064,25 +3109,7 @@ document.querySelectorAll('.login-tab').forEach(tab => {
   tab.addEventListener('click', () => switchTab(tab.dataset.tab));
 });
 
-// Simulate coach marking attendance for demo (pre-fill some past trainings)
-window.addEventListener('DOMContentLoaded', () => {
-  const past = MOCK_TRAININGS.filter(t => isPast(t.date));
-  past.forEach((t, i) => {
-    // pre-fill demo user attendance
-    const attKey = `tyd_att_${t.id}_u1`;
-    if (!localStorage.getItem(attKey)) {
-      localStorage.setItem(attKey, i % 4 === 3 ? '0' : '1'); // 75% attendance
-    }
-  });
-  // Load coach-set attendance into STATE (for demo user u1)
-  past.forEach(t => {
-    const attKey = `tyd_att_${t.id}_u1`;
-    const present = localStorage.getItem(attKey) === '1';
-    if (localStorage.getItem(attKey) !== null) {
-      // merge into user state when they login
-    }
-  });
-});
+// Demo seeding bylo odstraněno – docházka se načítá z Firestore
 
 /* ═══════════════════════════════════════════════════════════════════
    LEADERBOARD
@@ -3168,14 +3195,10 @@ function buildLiveLeaderboard() {
     map[normName(m.name)] = { name: m.name, count: m.count, hasAccount: false };
   });
 
-  // Overlay: registrovaní běžci se živou docházkou
+  // Overlay: registrovaní běžci se živou docházkou (ze Firestore cache)
   getAllUsers().filter(u => u.role !== 'coach').forEach(u => {
-    const stateAtt = JSON.parse(localStorage.getItem(`tyd_state_${u.id}`) || '{}').attendance || {};
-    const merged = { ...stateAtt };
-    pastTrainings.forEach(t => {
-      const val = localStorage.getItem(`tyd_att_${t.id}_${u.id}`);
-      if (val !== null) merged[t.id] = { present: val === '1' };
-    });
+    const cached = (_usersCache || []).find(uc => uc.id === u.id) || u;
+    const merged = { ...(cached.attendance || {}) };
     const count = Object.values(merged).filter(a => a.present).length;
     const key = normName(u.name);
     if (count > 0) {
@@ -3307,33 +3330,20 @@ function seedAttendanceFromLeaderboard(user) {
   return true;
 }
 
-// After loginSuccess, load coach-marked attendance
-const _origLogin = window.loginSuccess;
-function loginSuccess(user, remember = true) {
-  STATE.user = user;
-  loadState();
-  STATE.trainings = buildTrainings();
+/* ═══════════════════════════════════════════════════════════════════
+   LOGIN SUCCESS  +  onAuthStateChanged
+   ─ Firebase Auth spravuje session (žádný localStorage session key)
+   ═══════════════════════════════════════════════════════════════════ */
+async function loginSuccess(user) {
+  STATE.user          = user;
+  STATE.attendance    = user.attendance    || {};
+  STATE.registrations = user.registrations || {};
+  STATE.trainings     = buildTrainings();
 
-  // 1) Load coach-marked attendance (from admin toggles)
-  STATE.trainings.filter(t => isPast(t.date)).forEach(t => {
-    const attKey = `tyd_att_${t.id}_${user.id}`;
-    const val = localStorage.getItem(attKey);
-    if (val !== null) STATE.attendance[t.id] = { present: val === '1' };
-  });
-
-  // 2) On first ever login with no data: seed from leaderboard or leave blank
+  // Na prvním přihlášení bez dat: naseed z leaderboardu
   if (!Object.keys(STATE.attendance).length) {
     seedAttendanceFromLeaderboard(user);
     saveState();
-  }
-
-  // 3) Store session — persistent or tab-only
-  if (remember) {
-    localStorage.setItem('tyd_session', user.id);
-    sessionStorage.removeItem('tyd_session');
-  } else {
-    sessionStorage.setItem('tyd_session', user.id);
-    localStorage.removeItem('tyd_session');
   }
 
   document.getElementById('screen-login').style.display = 'none';
@@ -3344,6 +3354,46 @@ function loginSuccess(user, remember = true) {
   tryLoadNotion();
   showToast(`Vítej, ${user.name.split(' ')[0]}! 👋`, 'success');
 }
+
+/* onAuthStateChanged nahrazuje DOMContentLoaded auto-login */
+auth.onAuthStateChanged(async (fbUser) => {
+  if (!fbUser) {
+    // Odhlášen – zobraz login screen
+    document.getElementById('screen-login').style.display = 'flex';
+    document.getElementById('app').classList.add('hidden');
+    return;
+  }
+
+  // Načti vše paralelně
+  try {
+    await Promise.all([ loadAllUsers(), loadTrainingData() ]);
+  } catch(e) {
+    console.warn('Chyba načítání dat:', e);
+  }
+
+  let userDoc = (_usersCache || []).find(u => u.id === fbUser.uid);
+
+  if (!userDoc) {
+    // User doc chybí v Firestore – vytvoř základní profil
+    userDoc = {
+      name:          fbUser.displayName || fbUser.email.split('@')[0],
+      email:         fbUser.email,
+      role:          'member',
+      gender:        'male',
+      joinDate:      new Date().toISOString().slice(0,10),
+      credits:       0,
+      creditHistory: [],
+      creditUsed:    {},
+      attendance:    {},
+      registrations: {},
+    };
+    await db.collection('users').doc(fbUser.uid).set(userDoc);
+    if (_usersCache) _usersCache.push({ id: fbUser.uid, ...userDoc });
+    userDoc = { id: fbUser.uid, ...userDoc };
+  }
+
+  await loginSuccess(userDoc);
+});
 </script>
 </body>
 </html>

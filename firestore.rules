@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Pomocná funkce – je uživatel přihlášen?
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Pomocná funkce – je uživatel trenér?
+    function isCoach() {
+      return isAuth() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'coach';
+    }
+
+    // ── Users ──────────────────────────────────────────────────────────
+    match /users/{userId} {
+      // Každý přihlášený uživatel čte svůj vlastní profil;
+      // trenér čte všechny profily
+      allow read: if isAuth() && (request.auth.uid == userId || isCoach());
+
+      // Uživatel může editovat jen svůj vlastní profil;
+      // trenér může editovat kohokoliv (kredity, docházka)
+      allow write: if isAuth() && (request.auth.uid == userId || isCoach());
+    }
+
+    // ── Training config (patches / extras / deletes) ───────────────────
+    match /config/{docId} {
+      // Čtou všichni přihlášení, píší jen trenéři
+      allow read: if isAuth();
+      allow write: if isCoach();
+    }
+
+    // ── Ostatní kolekce (budoucí rozšíření) ────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
