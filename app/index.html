@@ -1114,9 +1114,16 @@
       </div>
     </div>
     <div id="topup-custom-row" style="display:none;margin-bottom:16px">
-      <div style="display:flex;gap:10px">
-        <div class="form-group" style="flex:1;margin:0"><label>Tréninků</label><input type="number" id="topup-custom-sessions" placeholder="6" min="1" oninput="updateTopupCustom()" /></div>
-        <div class="form-group" style="flex:1;margin:0"><label>Kč</label><input type="number" id="topup-custom-amount" placeholder="900" min="0" oninput="updateTopupCustom()" /></div>
+      <div style="text-align:center;padding:8px 0 4px">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:16px">Počet tréninků</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:28px">
+          <button type="button" onclick="stepCustomSessions(-1)" style="width:52px;height:52px;border-radius:50%;border:2px solid var(--border);background:var(--bg);font-size:28px;line-height:1;cursor:pointer;font-weight:700;color:var(--text-main);display:flex;align-items:center;justify-content:center">−</button>
+          <div>
+            <div style="font-size:56px;font-weight:800;font-family:'Baloo 2',sans-serif;color:var(--green);line-height:1" id="topup-custom-count">1</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text-main);margin-top:4px" id="topup-custom-price-label">150 Kč</div>
+          </div>
+          <button type="button" onclick="stepCustomSessions(1)" style="width:52px;height:52px;border-radius:50%;background:var(--green);border:none;font-size:28px;line-height:1;cursor:pointer;font-weight:700;color:white;display:flex;align-items:center;justify-content:center">+</button>
+        </div>
       </div>
     </div>
     <div id="topup-qr-section" style="display:none;text-align:center">
@@ -2318,7 +2325,8 @@ function openRunnerDetail(userId) {
       <span style="font-size:16px;width:22px;text-align:center">${present ? '✅' : '❌'}</span>
       <span style="font-size:14px;font-weight:600;color:var(--text-main)">${t.trainNum ? '#'+t.trainNum : ''}</span>
       <span style="font-size:14px;color:var(--text-main)">${fmtDate(t.date)}</span>
-      <span style="font-size:13px;color:var(--text-light);margin-left:auto;text-align:right;max-width:140px">${t.type||''}</span>
+      <span style="font-size:13px;color:var(--text-light);flex:1;text-align:right;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.type||''}</span>
+      <button onclick="coachToggleAttFromDetail('${t.id}','${userId}')" style="background:${present?'var(--green)':'var(--bg)'};color:${present?'white':'var(--text-light)'};border:1.5px solid ${present?'var(--green)':'var(--border)'};border-radius:var(--radius-sm);padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">${present?'✓ Byl':'✗ Nebyl'}</button>
     </div>`;
   }).join('');
 
@@ -2514,15 +2522,25 @@ function selectTopupPkg(el, sessions, amount) {
     topupSessions = sessions; topupAmount = amount;
     generateTopupQR();
   } else {
-    document.getElementById('topup-qr-section').style.display = 'none';
+    // Reset stepper to 1
+    customSessionsCount = 1;
+    topupSessions = 1;
+    topupAmount = CFG.paymentMember;
+    document.getElementById('topup-custom-count').textContent = '1';
+    document.getElementById('topup-custom-price-label').textContent = CFG.paymentMember.toLocaleString('cs-CZ') + ' Kč';
+    generateTopupQR();
   }
 }
 
-function updateTopupCustom() {
-  topupSessions = parseInt(document.getElementById('topup-custom-sessions').value) || 0;
-  topupAmount   = parseInt(document.getElementById('topup-custom-amount').value)   || 0;
-  if (topupSessions > 0 && topupAmount > 0) generateTopupQR();
-  else document.getElementById('topup-qr-section').style.display = 'none';
+let customSessionsCount = 1;
+
+function stepCustomSessions(delta) {
+  customSessionsCount = Math.max(1, customSessionsCount + delta);
+  topupSessions = customSessionsCount;
+  topupAmount = customSessionsCount * CFG.paymentMember;
+  document.getElementById('topup-custom-count').textContent = customSessionsCount;
+  document.getElementById('topup-custom-price-label').textContent = topupAmount.toLocaleString('cs-CZ') + ' Kč';
+  generateTopupQR();
 }
 
 function generateTopupQR() {
@@ -2554,8 +2572,8 @@ function renderAdminFinance() {
   // Collect all credit history entries
   const allEntries = [];
   users.forEach(u => {
-    (u.creditHistory || []).forEach(h => {
-      allEntries.push({ ...h, userName: u.name, userId: u.id });
+    (u.creditHistory || []).forEach((h, i) => {
+      allEntries.push({ ...h, userName: u.name, userId: u.id, _histIdx: i });
     });
   });
 
@@ -2604,15 +2622,16 @@ function renderAdminFinance() {
       const [y, mo] = m.split('-');
       const monthName = new Date(+y, +mo-1, 1).toLocaleString('cs-CZ', { month: 'long', year: 'numeric' });
       const rows = entries.map(e => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-          <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);gap:8px">
+          <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:600">${e.userName}</div>
             <div style="font-size:11px;color:var(--text-light)">${fmtDate(e.date)}${e.paymentMethod ? ' · ' + (PAY_METHOD_LABELS[e.paymentMethod]||e.paymentMethod) : ''}${e.note ? ' · ' + e.note : ''}</div>
           </div>
-          <div style="text-align:right">
+          <div style="text-align:right;flex-shrink:0">
             <div style="font-size:13px;font-weight:700;color:var(--green)">${e.amount ? e.amount + ' Kč' : '—'}</div>
             <div style="font-size:11px;color:var(--text-light)">${e.sessions} ${creditSessionsLabel(e.sessions)}</div>
           </div>
+          <button onclick="deleteFinanceEntry('${e.userId}',${e._histIdx})" style="background:none;border:none;font-size:16px;cursor:pointer;padding:2px 4px;color:var(--text-light);flex-shrink:0" title="Smazat">🗑</button>
         </div>`).join('');
       return `<div class="finance-month">
         <div class="finance-month-header">
@@ -2625,6 +2644,19 @@ function renderAdminFinance() {
         <div class="finance-month-body">${rows}</div>
       </div>`;
     }).join('')}`;
+}
+
+function deleteFinanceEntry(userId, histIndex) {
+  const users = getAllUsers();
+  const uIdx = users.findIndex(u => u.id === userId);
+  if (uIdx === -1) return;
+  const entry = users[uIdx].creditHistory?.[histIndex];
+  if (!entry) return;
+  users[uIdx].credits = Math.max(0, (users[uIdx].credits || 0) - entry.sessions);
+  users[uIdx].creditHistory.splice(histIndex, 1);
+  saveUsers(users);
+  showToast(`Platba smazána · odebráno ${entry.sessions} ${creditSessionsLabel(entry.sessions)}`, '');
+  renderAdminFinance();
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2710,6 +2742,39 @@ function coachToggleAtt(trainingId, userId, btn) {
     }
   }
   showToast(present ? 'Docházka zaznamenána ✓' : 'Docházka odebrána', present ? 'success' : '');
+}
+
+function coachToggleAttFromDetail(trainingId, userId) {
+  const cur = localStorage.getItem(`tyd_att_${trainingId}_${userId}`);
+  // Determine current state from merged attendance
+  const stateAtt = JSON.parse(localStorage.getItem(`tyd_state_${userId}`) || '{}').attendance || {};
+  const wasPresent = cur !== null ? cur === '1' : !!(stateAtt[trainingId]?.present);
+  const present = !wasPresent;
+  localStorage.setItem(`tyd_att_${trainingId}_${userId}`, present ? '1' : '0');
+  if (userId === STATE.user.id) {
+    STATE.attendance[trainingId] = { present };
+    saveState();
+  }
+  syncAttendanceToNotion(trainingId, userId, present);
+  // Credit deduction / refund
+  const allUsers = getAllUsers();
+  const uIdx = allUsers.findIndex(u => u.id === userId);
+  if (uIdx !== -1) {
+    const u = allUsers[uIdx];
+    const creditUsed = u.creditUsed || {};
+    if (present && !creditUsed[trainingId] && (u.credits || 0) > 0) {
+      allUsers[uIdx].credits = u.credits - 1;
+      allUsers[uIdx].creditUsed = { ...creditUsed, [trainingId]: true };
+      saveUsers(allUsers);
+    } else if (!present && creditUsed[trainingId]) {
+      allUsers[uIdx].credits = (u.credits || 0) + 1;
+      const { [trainingId]: _, ...rest } = creditUsed;
+      allUsers[uIdx].creditUsed = rest;
+      saveUsers(allUsers);
+    }
+  }
+  showToast(present ? '✅ Docházka zaznamenána' : 'Docházka odebrána', present ? 'success' : '');
+  openRunnerDetail(userId); // refresh
 }
 
 /* ── Runner list (admin) ─────────────────────────────────────────── */
