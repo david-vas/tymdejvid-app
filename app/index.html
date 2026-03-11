@@ -642,6 +642,10 @@
         <input type="email" id="reg-email" placeholder="jan@example.com" />
       </div>
       <div class="form-group">
+        <label>Telefonní číslo <span style="color:var(--text-light);font-weight:400">(volitelné)</span></label>
+        <input type="tel" id="reg-phone" placeholder="+420 777 123 456" />
+      </div>
+      <div class="form-group">
         <label>Heslo</label>
         <input type="password" id="reg-pass" placeholder="min. 6 znaků" />
       </div>
@@ -1005,6 +1009,10 @@
         <option value="male">Muž</option>
         <option value="female">Žena</option>
       </select>
+    </div>
+    <div class="form-group">
+      <label>Telefonní číslo <span style="color:var(--text-light);font-weight:400">(volitelné)</span></label>
+      <input type="tel" id="pe-phone" placeholder="+420 777 123 456" />
     </div>
     <p class="form-error" id="pe-error"></p>
     <div style="background:var(--bg);border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;color:var(--text-light);margin-top:8px">
@@ -1508,11 +1516,13 @@ async function doRegister() {
   }
   try {
     const gender = document.getElementById('reg-gender').value || 'male';
+    const phone  = document.getElementById('reg-phone').value.trim();
     const cred   = await auth.createUserWithEmailAndPassword(email, pass);
     const newUser = {
       name, email,
       role: 'member',
       gender,
+      phone:          phone || '',
       joinDate:       new Date().toISOString().slice(0,10),
       credits:        0,
       creditHistory:  [],
@@ -2294,8 +2304,9 @@ function triggerPhotoUpload() {
 
 /* ── Editace profilu běžce ───────────────────────────────────────── */
 function openProfileEdit() {
-  document.getElementById('pe-name').value   = STATE.user.name  || '';
+  document.getElementById('pe-name').value   = STATE.user.name   || '';
   document.getElementById('pe-gender').value = STATE.user.gender || 'male';
+  document.getElementById('pe-phone').value  = STATE.user.phone  || '';
   document.getElementById('pe-error').classList.remove('show');
   document.getElementById('profile-edit-modal').classList.add('open');
 }
@@ -2311,14 +2322,17 @@ function saveProfileEdit() {
   if (!name) { errEl.textContent = 'Zadej jméno.'; errEl.classList.add('show'); return; }
   errEl.classList.remove('show');
 
+  const phone = document.getElementById('pe-phone').value.trim();
+
   // Aktualizuj STATE
   STATE.user.name   = name;
   STATE.user.gender = gender;
+  STATE.user.phone  = phone;
 
   // Aktualizuj cache a Firestore
   const users = getAllUsers();
   const idx   = users.findIndex(u => u.id === STATE.user.id);
-  if (idx !== -1) { users[idx].name = name; users[idx].gender = gender; }
+  if (idx !== -1) { users[idx].name = name; users[idx].gender = gender; users[idx].phone = phone; }
   saveUsers(users);
 
   closeProfileEdit();
@@ -3000,7 +3014,7 @@ function renderAdminRunners() {
         <div class="avatar-mini" style="width:34px;height:34px;font-size:13px;flex-shrink:0">${getInitials(u.name)}</div>
         <div class="admin-list-info">
           <div class="admin-list-name">${u.name}${u.role==='coach' ? ' <span class="admin-badge">TRENÉR</span>' : ''}</div>
-          <div class="admin-list-sub">${u.email}</div>
+          <div class="admin-list-sub">${u.email}${u.phone ? ' · 📞 ' + u.phone : ''}</div>
         </div>
         <div class="admin-list-actions">
           <button class="btn btn-outline btn-sm" onclick="openRunnerDetail('${u.id}')" style="margin-right:4px">👁</button>
