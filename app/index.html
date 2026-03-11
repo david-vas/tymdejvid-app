@@ -86,8 +86,24 @@
     .form-group input:focus { outline: none; border-color: var(--green); }
     .form-error { color: #ef4444; font-size: 13px; margin-top: 8px; display: none; }
     .form-error.show { display: block; }
-    .pace-hint { font-size: 12px; font-weight: 700; color: var(--green); white-space: nowrap;
-      min-width: 72px; text-align: right; transition: opacity .2s; }
+    .pace-hint { font-size: 13px; font-weight: 700; color: var(--green); white-space: nowrap; transition: opacity .2s; }
+
+    /* ── RECORDS CARD ────────────────────────────────── */
+    .rec-card { background: #f8fafc; border-radius: 14px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
+    .rec-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .rec-card-icon { font-size: 22px; }
+    .rec-card-label { font-size: 15px; font-weight: 700; flex: 1; }
+    .rec-card-inputs { display: flex; align-items: flex-end; gap: 6px; }
+    .time-field { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .time-field input {
+      text-align: center; font-size: 28px; font-weight: 700; line-height: 1;
+      border: 2px solid var(--border); border-radius: 10px; padding: 10px 4px;
+      background: white; width: 64px; box-sizing: border-box;
+    }
+    .time-field.tf-h input { width: 50px; }
+    .time-field input:focus { border-color: var(--green); outline: none; }
+    .time-field-lbl { font-size: 11px; color: var(--text-light); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .time-sep-big { font-size: 28px; font-weight: 900; color: #cbd5e1; padding-bottom: 26px; flex-shrink: 0; }
 
     /* ── PENDING / REJECTED SCREEN ──────────────────── */
     #screen-pending {
@@ -121,24 +137,50 @@
     .app-header .logo { display: flex; align-items: center; }
     .app-header .logo img { height: 40px; width: auto; object-fit: contain; mix-blend-mode: multiply; }
     .app-header .header-right { display: flex; align-items: center; gap: 10px; }
+    .notification-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--bg); border: 1.5px solid var(--border);
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+      position: relative; cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .notification-btn:active { background: var(--green-light); border-color: var(--green); }
+    .notif-dot {
+      position: absolute; top: 5px; right: 5px;
+      width: 10px; height: 10px; border-radius: 50%; background: #ef4444;
+      border: 2px solid white; display: none;
+      animation: pulse-dot 1.8s ease-in-out infinite;
+    }
+    .notif-dot.show { display: block; }
+    @keyframes pulse-dot {
+      0%,100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.35); opacity: .8; }
+    }
+    /* ── HEADER AVATAR DROPDOWN ──────────────────────── */
     .avatar-sm {
-      width: 34px; height: 34px; border-radius: 50%;
+      width: 40px; height: 40px; border-radius: 50%;
       background: var(--green-light); color: var(--green-deep);
       display: flex; align-items: center; justify-content: center;
       font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 14px;
-      cursor: pointer;
+      cursor: pointer; border: 2px solid var(--green); position: relative;
+      overflow: visible;
     }
-    .notification-btn {
-      width: 34px; height: 34px; border-radius: 50%; background: var(--bg);
-      display: flex; align-items: center; justify-content: center; font-size: 16px;
-      position: relative;
+    .header-dropdown {
+      position: absolute; top: calc(100% + 8px); right: 0;
+      background: white; border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,.14);
+      border: 1px solid var(--border); min-width: 200px; z-index: 300;
+      overflow: hidden; display: none;
     }
-    .notif-dot {
-      position: absolute; top: 6px; right: 6px;
-      width: 8px; height: 8px; border-radius: 50%; background: #ef4444;
-      border: 2px solid white; display: none;
-    }
-    .notif-dot.show { display: block; }
+    .header-dropdown.open { display: block; }
+    .hd-user { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); }
+    .hd-name { font-weight: 700; font-size: 15px; color: var(--text); }
+    .hd-email { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+    .hd-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+      font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer;
+      transition: background .12s; }
+    .hd-item:hover { background: var(--bg); }
+    .hd-item.danger { color: #ef4444; }
+    .hd-item-icon { font-size: 18px; width: 24px; text-align: center; }
 
     /* ── NEWS PANEL ──────────────────────────────────── */
     .news-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 299; display: none; }
@@ -872,7 +914,26 @@
     <div class="logo" onclick="navigate('dashboard')" style="cursor:pointer"><img src="logo.png" alt="#TYMDEJVID" /></div>
     <div class="header-right">
       <div class="notification-btn" onclick="openNewsPanel()">🔔<span class="notif-dot" id="notif-dot"></span></div>
-      <div class="avatar-sm" id="header-avatar" onclick="navigate('profile')"></div>
+      <div class="avatar-sm" id="header-avatar" onclick="toggleHeaderMenu(event)">
+        <div class="header-dropdown" id="header-dropdown" onclick="event.stopPropagation()">
+          <div class="hd-user">
+            <div class="hd-name" id="hd-name">—</div>
+            <div class="hd-email" id="hd-email">—</div>
+          </div>
+          <div class="hd-item" onclick="closeHeaderMenu();navigate('profile')">
+            <span class="hd-item-icon">👤</span> Můj profil
+          </div>
+          <div class="hd-item" onclick="closeHeaderMenu();openProfileEdit()">
+            <span class="hd-item-icon">✏️</span> Upravit profil
+          </div>
+          <div class="hd-item" onclick="closeHeaderMenu();openRecordsEdit()">
+            <span class="hd-item-icon">🏅</span> Osobní rekordy
+          </div>
+          <div class="hd-item danger" onclick="closeHeaderMenu();doLogout()">
+            <span class="hd-item-icon">🚪</span> Odhlásit se
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -1247,12 +1308,18 @@
       🧒 Přihlašuješ dítě jako rodič nebo zákonný zástupce.
     </div>
     <div class="form-group">
-      <label>Jméno dítěte</label>
-      <input type="text" id="kr-name" placeholder="Jana Nováková" />
+      <label>Jméno rodiče / zákonného zástupce</label>
+      <input type="text" id="kr-parent" placeholder="Jan Novák" autocomplete="name" />
     </div>
-    <div class="form-group">
-      <label>Rok narození</label>
-      <input type="number" id="kr-year" placeholder="2016" min="2008" max="2022" />
+    <div class="form-row">
+      <div class="form-group">
+        <label>Jméno dítěte</label>
+        <input type="text" id="kr-name" placeholder="Jana Nováková" />
+      </div>
+      <div class="form-group">
+        <label>Rok narození</label>
+        <input type="number" id="kr-year" placeholder="2016" min="2005" max="2022" inputmode="numeric" />
+      </div>
     </div>
     <p class="form-error" id="kr-error"></p>
   </div>
@@ -1502,42 +1569,130 @@
     <button class="btn btn-green btn-sm" onclick="saveRecords()">Uložit</button>
   </div>
   <div class="fullscreen-modal-body">
-    <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Zadej čas ve formátu mm:ss nebo h:mm:ss</p>
-    <div class="form-group">
-      <label>1 km</label>
-      <div style="display:flex;align-items:center;gap:10px">
-        <input type="text" id="rec-1k" placeholder="3:45" inputmode="numeric" oninput="calcRecordPace('1k',1)" style="flex:1" />
+    <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Zadej čas čísly — pole se automaticky přepínají.</p>
+
+    <!-- 1 KM -->
+    <div class="rec-card">
+      <div class="rec-card-header">
+        <span class="rec-card-icon">⚡</span>
+        <span class="rec-card-label">1 km</span>
         <span id="pace-1k" class="pace-hint"></span>
       </div>
+      <div class="rec-card-inputs">
+        <div class="time-field">
+          <input type="text" inputmode="numeric" maxlength="2" id="rec-m-1k" placeholder="3"
+            oninput="recAutoAdv(this,'rec-s-1k');calcRecordPace('1k',1)" />
+          <span class="time-field-lbl">min</span>
+        </div>
+        <span class="time-sep-big">:</span>
+        <div class="time-field">
+          <input type="text" inputmode="numeric" maxlength="2" id="rec-s-1k" placeholder="45"
+            oninput="calcRecordPace('1k',1)" />
+          <span class="time-field-lbl">sek</span>
+        </div>
+      </div>
     </div>
-    <div class="form-group">
-      <label>5 km</label>
-      <div style="display:flex;align-items:center;gap:10px">
-        <input type="text" id="rec-5k" placeholder="20:30" inputmode="numeric" oninput="calcRecordPace('5k',5)" style="flex:1" />
+
+    <!-- 5 KM -->
+    <div class="rec-card">
+      <div class="rec-card-header">
+        <span class="rec-card-icon">🏃</span>
+        <span class="rec-card-label">5 km</span>
         <span id="pace-5k" class="pace-hint"></span>
       </div>
+      <div class="rec-card-inputs">
+        <div class="time-field">
+          <input type="text" inputmode="numeric" maxlength="2" id="rec-m-5k" placeholder="20"
+            oninput="recAutoAdv(this,'rec-s-5k');calcRecordPace('5k',5)" />
+          <span class="time-field-lbl">min</span>
+        </div>
+        <span class="time-sep-big">:</span>
+        <div class="time-field">
+          <input type="text" inputmode="numeric" maxlength="2" id="rec-s-5k" placeholder="30"
+            oninput="calcRecordPace('5k',5)" />
+          <span class="time-field-lbl">sek</span>
+        </div>
+      </div>
     </div>
-    <div class="form-group">
-      <label>10 km</label>
-      <div style="display:flex;align-items:center;gap:10px">
-        <input type="text" id="rec-10k" placeholder="42:15" inputmode="numeric" oninput="calcRecordPace('10k',10)" style="flex:1" />
+
+    <!-- 10 KM -->
+    <div class="rec-card">
+      <div class="rec-card-header">
+        <span class="rec-card-icon">🏅</span>
+        <span class="rec-card-label">10 km</span>
         <span id="pace-10k" class="pace-hint"></span>
       </div>
+      <div class="rec-card-inputs">
+        <div class="time-field">
+          <input type="text" inputmode="numeric" maxlength="2" id="rec-m-10k" placeholder="42"
+            oninput="recAutoAdv(this,'rec-s-10k');calcRecordPace('10k',10)" />
+          <span class="time-field-lbl">min</span>
+        </div>
+        <span class="time-sep-big">:</span>
+        <div class="time-field">
+          <input type="text" inputmode="numeric" maxlength="2" id="rec-s-10k" placeholder="15"
+            oninput="calcRecordPace('10k',10)" />
+          <span class="time-field-lbl">sek</span>
+        </div>
+      </div>
     </div>
-    <div class="form-group">
-      <label>Půlmaraton</label>
-      <div style="display:flex;align-items:center;gap:10px">
-        <input type="text" id="rec-hm" placeholder="1:32:00" inputmode="numeric" oninput="calcRecordPace('hm',21.0975)" style="flex:1" />
+
+    <!-- PŮLMARATON -->
+    <div class="rec-card">
+      <div class="rec-card-header">
+        <span class="rec-card-icon">🏆</span>
+        <span class="rec-card-label">Půlmaraton</span>
         <span id="pace-hm" class="pace-hint"></span>
       </div>
-    </div>
-    <div class="form-group">
-      <label>Maraton</label>
-      <div style="display:flex;align-items:center;gap:10px">
-        <input type="text" id="rec-m" placeholder="3:10:00" inputmode="numeric" oninput="calcRecordPace('m',42.195)" style="flex:1" />
-        <span id="pace-m" class="pace-hint"></span>
+      <div class="rec-card-inputs">
+        <div class="time-field tf-h">
+          <input type="text" inputmode="numeric" maxlength="1" id="rec-h-hm" placeholder="1"
+            oninput="recAutoAdv(this,'rec-m-hm');calcRecordPace('hm',21.0975)" />
+          <span class="time-field-lbl">hod</span>
+        </div>
+        <span class="time-sep-big">:</span>
+        <div class="time-field">
+          <input type="text" inputmode="numeric" maxlength="2" id="rec-m-hm" placeholder="32"
+            oninput="recAutoAdv(this,'rec-s-hm');calcRecordPace('hm',21.0975)" />
+          <span class="time-field-lbl">min</span>
+        </div>
+        <span class="time-sep-big">:</span>
+        <div class="time-field">
+          <input type="text" inputmode="numeric" maxlength="2" id="rec-s-hm" placeholder="00"
+            oninput="calcRecordPace('hm',21.0975)" />
+          <span class="time-field-lbl">sek</span>
+        </div>
       </div>
     </div>
+
+    <!-- MARATON -->
+    <div class="rec-card">
+      <div class="rec-card-header">
+        <span class="rec-card-icon">🌟</span>
+        <span class="rec-card-label">Maraton</span>
+        <span id="pace-m" class="pace-hint"></span>
+      </div>
+      <div class="rec-card-inputs">
+        <div class="time-field tf-h">
+          <input type="text" inputmode="numeric" maxlength="1" id="rec-h-m" placeholder="3"
+            oninput="recAutoAdv(this,'rec-m-m');calcRecordPace('m',42.195)" />
+          <span class="time-field-lbl">hod</span>
+        </div>
+        <span class="time-sep-big">:</span>
+        <div class="time-field">
+          <input type="text" inputmode="numeric" maxlength="2" id="rec-m-m" placeholder="10"
+            oninput="recAutoAdv(this,'rec-s-m');calcRecordPace('m',42.195)" />
+          <span class="time-field-lbl">min</span>
+        </div>
+        <span class="time-sep-big">:</span>
+        <div class="time-field">
+          <input type="text" inputmode="numeric" maxlength="2" id="rec-s-m" placeholder="00"
+            oninput="calcRecordPace('m',42.195)" />
+          <span class="time-field-lbl">sek</span>
+        </div>
+      </div>
+    </div>
+
   </div>
   <div class="fullscreen-modal-footer">
     <button class="btn btn-green" style="flex:1" onclick="saveRecords()">💾 Uložit rekordy</button>
@@ -1696,7 +1851,7 @@ const auth = firebase.auth();
 
 // FCM – push notifikace
 // VAPID klíč: Firebase Console → Project Settings → Cloud Messaging → Web Push certificates
-const FCM_VAPID_KEY = 'DOPLŇ_VAPID_KLÍČ_Z_FIREBASE_KONZOLE';
+const FCM_VAPID_KEY = 'BLXZqWtqmwRt3bnL-qPvEeiffzRalBJIz-tPBZJjhLqRNgDItzAb6eKQRq-ZCRqDHHitmNb5IjP3MK1TiByFPlI';
 let _messaging = null;
 try {
   _messaging = firebase.messaging();
@@ -1934,12 +2089,37 @@ async function doLogout() {
 
 function updateHeaderAvatar() {
   const el = document.getElementById('header-avatar');
+  const initials = STATE.user ? STATE.user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '?';
+  // keep dropdown inside, just update the visible part
+  const dd = document.getElementById('header-dropdown');
   if (STATE.user?.photo) {
     el.innerHTML = `<img src="${STATE.user.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    el.appendChild(dd);
   } else {
-    el.textContent = STATE.user ? STATE.user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '?';
+    el.innerHTML = initials;
+    el.appendChild(dd);
   }
+  // update dropdown user info
+  const nameEl = document.getElementById('hd-name');
+  const emailEl = document.getElementById('hd-email');
+  if (nameEl) nameEl.textContent = STATE.user?.name || '';
+  if (emailEl) emailEl.textContent = STATE.user?.email || '';
 }
+
+function toggleHeaderMenu(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('header-dropdown');
+  const isOpen = dd.classList.contains('open');
+  closeHeaderMenu();
+  if (!isOpen) dd.classList.add('open');
+}
+
+function closeHeaderMenu() {
+  document.getElementById('header-dropdown')?.classList.remove('open');
+}
+
+// Kliknutí kdekoliv jinde zavře dropdown
+document.addEventListener('click', closeHeaderMenu);
 
 /* ═══════════════════════════════════════════════════════════════════
    TRAINING STORAGE (Firestore-based CRUD)
@@ -2724,6 +2904,7 @@ let _kidsRegTrainingId = null;
 
 function openKidsRegModal(trainingId) {
   _kidsRegTrainingId = trainingId;
+  document.getElementById('kr-parent').value = STATE.user?.name || '';
   document.getElementById('kr-name').value = '';
   document.getElementById('kr-year').value = '';
   document.getElementById('kr-error').classList.remove('show');
@@ -2736,11 +2917,12 @@ function closeKidsRegModal() {
 }
 
 function saveKidsRegistration() {
-  const childName = document.getElementById('kr-name').value.trim();
-  const birthYear = parseInt(document.getElementById('kr-year').value);
+  const parentName = document.getElementById('kr-parent').value.trim();
+  const childName  = document.getElementById('kr-name').value.trim();
+  const birthYear  = parseInt(document.getElementById('kr-year').value);
   const errEl = document.getElementById('kr-error');
-  if (!childName || !birthYear || birthYear < 2005 || birthYear > 2022) {
-    errEl.textContent = 'Vyplň jméno dítěte a platný rok narození.';
+  if (!parentName || !childName || !birthYear || birthYear < 2005 || birthYear > 2022) {
+    errEl.textContent = 'Vyplň jméno rodiče, jméno dítěte a platný rok narození.';
     errEl.classList.add('show'); return;
   }
   const id = _kidsRegTrainingId;
@@ -2749,7 +2931,7 @@ function saveKidsRegistration() {
 
   const entry = {
     parentId:   STATE.user.id,
-    parentName: STATE.user.name,
+    parentName,
     childName,
     birthYear,
     registeredAt: new Date().toISOString().slice(0,10),
@@ -3135,11 +3317,50 @@ function formatPace(secPerKm) {
   const s = Math.round(secPerKm % 60);
   return `${m}:${String(s).padStart(2, '0')} /km`;
 }
+/* ── Record split-input helpers ────────────────────────────────── */
+function getRecordTimeStr(key) {
+  const hEl = document.getElementById('rec-h-' + key);
+  const mEl = document.getElementById('rec-m-' + key);
+  const sEl = document.getElementById('rec-s-' + key);
+  const m = parseInt(mEl?.value) || 0;
+  const s = parseInt(sEl?.value) || 0;
+  if (hEl) {
+    const h = parseInt(hEl.value) || 0;
+    if (!h && !m && !s) return '';
+    return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+  if (!m && !s) return '';
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+function setRecordTimeStr(key, timeStr) {
+  const hEl = document.getElementById('rec-h-' + key);
+  const mEl = document.getElementById('rec-m-' + key);
+  const sEl = document.getElementById('rec-s-' + key);
+  if (!timeStr) { [hEl,mEl,sEl].forEach(e => { if(e) e.value=''; }); return; }
+  const p = timeStr.split(':').map(Number);
+  if (p.length === 3) {
+    if (hEl) hEl.value = p[0] || '';
+    if (mEl) mEl.value = String(p[1]).padStart(2,'0');
+    if (sEl) sEl.value = String(p[2]).padStart(2,'0');
+  } else if (p.length === 2) {
+    if (hEl) hEl.value = '';
+    if (mEl) mEl.value = String(p[0]);
+    if (sEl) sEl.value = String(p[1]).padStart(2,'0');
+  }
+}
+function recAutoAdv(input, nextId) {
+  if (input.value.length >= parseInt(input.getAttribute('maxlength') || 2)) {
+    const n = document.getElementById(nextId);
+    if (n) { n.focus(); n.select(); }
+  }
+}
+
 /** Called oninput on each record field – updates the pace hint span */
 function calcRecordPace(key, km) {
-  const totalSec = parseTimeToSec(document.getElementById('rec-' + key).value);
+  const timeStr = getRecordTimeStr(key);
   const el = document.getElementById('pace-' + key);
   if (!el) return;
+  const totalSec = parseTimeToSec(timeStr);
   if (!totalSec || totalSec <= 0) { el.textContent = ''; return; }
   el.textContent = formatPace(totalSec / km);
 }
@@ -3147,8 +3368,8 @@ function calcRecordPace(key, km) {
 function openRecordsEdit() {
   const records = STATE.user.records || {};
   RECORD_DISTS.forEach(d => {
-    document.getElementById('rec-' + d.key).value = records[d.key] || '';
-    calcRecordPace(d.key, d.km);   // zobraz pace hned při otevření
+    setRecordTimeStr(d.key, records[d.key] || '');
+    calcRecordPace(d.key, d.km);
   });
   document.getElementById('records-modal').classList.add('open');
 }
@@ -3160,7 +3381,7 @@ function closeRecordsModal() {
 function saveRecords() {
   const records = {};
   RECORD_DISTS.forEach(d => {
-    const v = document.getElementById('rec-' + d.key).value.trim();
+    const v = getRecordTimeStr(d.key);
     if (v) records[d.key] = v;
   });
   STATE.user.records = records;
@@ -4637,7 +4858,6 @@ function loadNews() {
  */
 async function initFCM(userId) {
   if (!_messaging || !('serviceWorker' in navigator)) return;
-  if (FCM_VAPID_KEY === 'DOPLŇ_VAPID_KLÍČ_Z_FIREBASE_KONZOLE') return; // klíč ještě nebyl nastaven
 
   try {
     // Zaregistruj service worker
