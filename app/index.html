@@ -431,6 +431,20 @@
     .race-section-label { font-size: 12px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: .5px; padding: 10px 0 4px; }
     .pay-method-btn { background: var(--bg); border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; color: var(--text-main); font-family: inherit; }
     .pay-method-btn.selected { border-color: var(--green); background: var(--green-light); color: var(--green-deep); }
+    .date-picker-btn {
+      position: relative; display: flex; align-items: center; gap: 12px;
+      width: 100%; padding: 12px 16px; border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); font-size: 15px; background: white;
+      cursor: pointer; transition: border-color .2s; box-sizing: border-box;
+    }
+    .date-picker-btn:focus-within { border-color: var(--green); }
+    .date-picker-btn input[type=date] {
+      position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%;
+      cursor: pointer; border: none; background: none;
+    }
+    .date-picker-icon { font-size: 20px; flex-shrink: 0; }
+    .date-picker-label { flex: 1; }
+    .date-picker-label.placeholder { color: var(--text-light); }
     .stripe-pay-btn {
       display: flex; align-items: center; justify-content: center; gap: 10px;
       width: 100%; padding: 16px; border-radius: var(--radius-sm); border: none;
@@ -1276,7 +1290,14 @@
   </div>
   <div class="fullscreen-modal-body">
     <div class="form-group"><label>Název závodu</label><input type="text" id="race-name-inp" placeholder="Prague Half Marathon" /></div>
-    <div class="form-group"><label>Datum</label><input type="date" id="race-date-inp" /></div>
+    <div class="form-group">
+      <label>Datum</label>
+      <div class="date-picker-btn">
+        <span class="date-picker-icon">📅</span>
+        <span class="date-picker-label placeholder" id="race-date-display">Vyber datum</span>
+        <input type="date" id="race-date-inp" oninput="updateRaceDateDisplay()" />
+      </div>
+    </div>
     <div class="form-group">
       <label>Vzdálenost</label>
       <select id="race-dist-sel" onchange="onDistSelChange()">
@@ -2031,7 +2052,7 @@ function renderCalendar() {
     .sort((a,b) => a.date.localeCompare(b.date));
   const mtl = document.getElementById('month-trainings-list');
   if (monthTrainings.length === 0) {
-    mtl.innerHTML = `<div class="empty-state"><div class="empty-icon">🗓️</div><p>V tomto měsíci žádné tréninky</p></div>`;
+    mtl.innerHTML = `<div style="padding:6px 4px 12px;color:var(--text-light);font-size:13px">Žádné tréninky</div>`;
   } else {
     mtl.innerHTML = monthTrainings.map(t => trainingCard(t)).join('');
   }
@@ -2505,11 +2526,13 @@ function openRaceEdit(id) {
     document.getElementById('race-place-inp').value = '';
     document.getElementById('race-pace-inp').value  = '';
     document.getElementById('race-url-inp').value   = '';
+    updateRaceDateDisplay();
   } else {
     const race = (STATE.user.races || []).find(r => r.id === id);
     if (!race) return;
     document.getElementById('race-name-inp').value  = race.name  || '';
     document.getElementById('race-date-inp').value  = race.date  || '';
+    updateRaceDateDisplay();
     _setDistField(race.distance || '');
     document.getElementById('race-time-inp').value  = race.time  || '';
     document.getElementById('race-place-inp').value = race.place || '';
@@ -2517,6 +2540,18 @@ function openRaceEdit(id) {
     document.getElementById('race-url-inp').value   = race.url   || '';
   }
   document.getElementById('race-modal').classList.add('open');
+}
+
+function updateRaceDateDisplay() {
+  const val = document.getElementById('race-date-inp').value;
+  const el  = document.getElementById('race-date-display');
+  if (val) {
+    el.textContent = fmtDate(val);
+    el.classList.remove('placeholder');
+  } else {
+    el.textContent = 'Vyber datum';
+    el.classList.add('placeholder');
+  }
 }
 
 function onDistSelChange() {
